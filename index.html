@@ -99,9 +99,10 @@
       .axis-y-low, .axis-y-high { left: calc(50% + 2px); }
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
-      .people-content { --person-action-width: 3.5rem; display: grid; flex: 1; grid-template-rows: auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
+      .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
       .chart-heading, .people-heading { gap: var(--control-gap); padding: var(--control-gap) 0 calc(var(--control-gap) + 5px); }
-      #open-traits, #people-expand-all, .people-filter, .people-sort { flex: 1 1 auto; }
+      #open-traits, #people-expand-all, .people-filter { flex: 1 1 auto; }
+      .people-sort { flex: 0 0 var(--person-action-width); margin-left: auto; }
       #people-expand-all { display: grid; }
       #people-expand-all::before { content: "Collapse all"; visibility: hidden; grid-area: 1 / 1; }
       #people-expand-all span { grid-area: 1 / 1; }
@@ -147,14 +148,13 @@
       .person-age::-webkit-inner-spin-button, .person-age::-webkit-outer-spin-button { appearance: none; margin: 0; }
       .person-summary button { justify-self: start; }
       .person-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--control-gap); }
-      .person-actions button { width: 100%; min-width: 0; padding: 1px 0; }
-      .graph-action { display: grid; place-items: center; padding: 1px 3px; }
+      .person-actions button { box-sizing: border-box; width: 100%; min-width: 0; }
+      .person-actions button, .graph-action { display: grid; place-items: center; padding: 1px 3px; }
       /* Preserve the height of the text buttons while centering the icons. */
-      .graph-action::before { content: "\200b"; visibility: hidden; grid-area: 1 / 1; }
-      .person-actions svg, .graph-action svg { display: block; width: 12px; height: 12px; margin: auto; }
-      .graph-action svg { grid-area: 1 / 1; }
+      .person-actions button::before, .graph-action::before { content: "\200b"; visibility: hidden; grid-area: 1 / 1; }
+      .person-actions svg, .graph-action svg { display: block; width: 12px; height: 12px; margin: auto; grid-area: 1 / 1; }
       .person-visibility[aria-pressed="true"] .visibility-slash { display: none; }
-      .person-visibility[aria-pressed="false"] { border: 0; border-radius: 2px; padding: 3px 0; background: #000; color: #fff; }
+      .person-visibility[aria-pressed="false"] { border: 0; border-radius: 2px; padding: 3px 5px; background: #000; color: #fff; }
       .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
       .chart-heading h2, .people-heading h2 { margin: 0; font-size: 1.25em; font-weight: normal; }
       .chart-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
@@ -211,8 +211,9 @@
         .layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
       }
       @media (max-width: 500px) {
-        .people-content { --person-action-width: 2.5rem; }
+        #open-traits, #people-expand-all { padding-inline: 3px; }
         #add-person-form, .summary-name { flex-wrap: wrap; }
+        #new-person-name { flex-basis: 0; }
         #new-person-name, .person-name { min-width: 4rem; }
         .person-relationship { width: calc(4.75rem - 25px); }
         .graph-toggle, .relationship-toggle { padding-left: 1px; }
