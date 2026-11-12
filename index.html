@@ -60,6 +60,7 @@
       .setup-details { margin: 1em 0; }
       .layout { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, min(calc(100% - min(40%, 21rem) - 1em), var(--chart-available-width, 100%))) min(40%, 21rem); grid-template-rows: minmax(0, 1fr); justify-content: center; gap: 1em; }
       .graph-select { position: relative; flex: 1 1 90px; min-width: 90px; }
+      .graph-dates { display: flex; flex-wrap: wrap; gap: .5em; }
       #new-graph { margin-left: auto; }
       .graph-badge { border-radius: 2px; padding: 3px 7px; background: #efefef; color: #000; font: 13.3333px Arial, sans-serif; white-space: nowrap; }
       .account-email { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
@@ -250,7 +251,10 @@
                   <button id="graph-toggle" class="graph-toggle" type="button" aria-label="Choose a graph" aria-haspopup="listbox" aria-expanded="false" aria-controls="graph-select" disabled><span>Choose a graph</span></button>
                   <select id="graph-select" aria-label="Choose a graph" size="9" hidden></select>
                 </span>
-                <time class="graph-badge" id="graph-created"></time>
+                <span class="graph-dates">
+                  <time class="graph-badge" id="graph-created"></time>
+                  <time class="graph-badge" id="graph-modified"></time>
+                </span>
                 <button class="button" id="rename-graph" type="button">Rename</button>
                 <button class="button button-danger" id="delete-graph" type="button" aria-label="Delete graph"><span aria-hidden="true">Delete</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
                 <button class="button" id="new-graph" type="button">New graph</button>
@@ -500,6 +504,7 @@
         graphToggle: document.getElementById("graph-toggle"),
         graphSelect: document.getElementById("graph-select"),
         graphCreated: document.getElementById("graph-created"),
+        graphModified: document.getElementById("graph-modified"),
         peopleCount: document.getElementById("people-count"),
         peopleCountLabel: document.getElementById("people-count-label"),
         peopleFilterMenu: document.getElementById("people-filter-menu"),
@@ -1102,14 +1107,19 @@
         setSaveStatus("Your graphs are up to date");
       }
 
+      function setGraphDate(element, label, value) {
+        const date = new Date(value);
+        if (!value || Number.isNaN(date.getTime())) throw new Error(`The graph's ${label.toLowerCase()} date is unavailable.`);
+        element.dateTime = value;
+        element.textContent = `${label} ${date.toLocaleDateString()}`;
+      }
+
       function activateGraph(graph) {
-        const created = new Date(graph.created_at);
-        if (!graph.created_at || Number.isNaN(created.getTime())) throw new Error("The graph's creation date is unavailable.");
+        setGraphDate(el.graphCreated, "Created", graph.created_at);
+        setGraphDate(el.graphModified, "Modified", graph.updated_at);
         closeGraphOptions();
         activeGraphId = graph.id;
         activeGraphName = graph.name;
-        el.graphCreated.dateTime = graph.created_at;
-        el.graphCreated.textContent = `Created ${created.toLocaleDateString()}`;
         hoveredPersonId = null;
         focusedNamePersonId = null;
         stopNameFocusRing();
@@ -1172,6 +1182,7 @@
         if (error) throw error;
         const index = graphs.findIndex(graph => graph.id === data.id);
         if (index >= 0) graphs[index] = data;
+        if (activeGraphId === snapshot.id) setGraphDate(el.graphModified, "Modified", data.updated_at);
         if (activeGraphId === snapshot.id && snapshot.version === saveVersion) {
           setSaveStatus("Saved to your account");
           renderGraphList();
@@ -1315,7 +1326,7 @@
       el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
 
       function setPersonDateBadge(badge, label, value) {
-        badge.textContent = `${label}: `;
+        badge.textContent = `${label} `;
         if (!value) {
           badge.append("Unknown");
           return;
