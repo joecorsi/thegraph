@@ -63,6 +63,8 @@
       .graph-dates { display: flex; flex-wrap: wrap; gap: .5em; }
       #new-graph { margin-left: auto; }
       .graph-badge { border-radius: 2px; padding: 3px 7px; background: #efefef; color: #000; font: 13.3333px Arial, sans-serif; white-space: nowrap; }
+      .graph-date { display: inline-flex; align-items: center; gap: 4px; }
+      .graph-date svg { flex: none; width: 14px; height: 14px; }
       .account-email { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
       .save-status { flex: none; align-self: center; box-sizing: border-box; max-width: 100%; margin-top: .5em; text-align: center; white-space: normal; overflow-wrap: anywhere; }
       .status-spinner:not([hidden]) { display: inline-block; width: 1ch; margin-right: .5em; font-family: monospace; font-weight: bold; animation: status-spin .8s steps(8) infinite; }
@@ -251,8 +253,8 @@
                   <select id="graph-select" aria-label="Choose a graph" size="9" hidden></select>
                 </span>
                 <span class="graph-dates">
-                  <time class="graph-badge" id="graph-created"></time>
-                  <time class="graph-badge" id="graph-modified"></time>
+                  <span class="graph-badge graph-date" title="Created"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 8h15M6 2.5v4M14 2.5v4M10 10v5M7.5 12.5h5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span class="visually-hidden">Created </span><time id="graph-created"></time></span>
+                  <span class="graph-badge graph-date" title="Modified"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 8h15M6 2.5v4M14 2.5v4M7 14.5l5-5 1.7 1.7-5 5L7 16.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="visually-hidden">Modified </span><time id="graph-modified"></time></span>
                 </span>
                 <button class="button graph-action" id="rename-graph" type="button" aria-label="Rename graph" title="Rename graph"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 11.5 11.5 3a1.4 1.4 0 0 1 2 2L5 13.5 2.5 14zM10 4.5l2 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 <button class="button button-danger graph-action" id="delete-graph" type="button" aria-label="Delete graph" title="Delete graph"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
@@ -1110,7 +1112,7 @@
         const date = new Date(value);
         if (!value || Number.isNaN(date.getTime())) throw new Error(`The graph's ${label.toLowerCase()} date is unavailable.`);
         element.dateTime = value;
-        element.textContent = `${label} ${date.toLocaleDateString()}`;
+        element.textContent = date.toLocaleDateString();
       }
 
       function activateGraph(graph) {
