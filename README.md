@@ -12,6 +12,8 @@ The workspace stays within the viewport, with the add-person form above the scro
 
 Use the **Traits** button to add, rename, remove, or swap the ends of traits for the current graph, then choose **Save** or **Cancel**. Swapping ends leaves scores unchanged. Existing traits keep their scores and names as the high end; their low end is shown as "Low" until you name it.
 
+New graphs include the default traits; changing the defaults does not alter existing saved graphs.
+
 Click the people count to filter the list and graph by relationship, or choose All to clear the filter. Use the arrow keys and Enter to choose a filter, or Escape to cancel. The menu counts include hidden people; the count on the button is the number currently plotted. Use the sort button beside it to order the list by creation order (newest first), name, age (descending, with missing ages last), or visibility (hidden first). Filtering and sorting last until the page is refreshed and do not change saved graph data.
 
 The background selector is currently hidden; the previously selected background remains saved on this device. The Magic Eye pattern hides a heart; relax your gaze to see it.
