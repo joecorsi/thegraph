@@ -163,9 +163,23 @@
       .person-dates .graph-badge { text-align: center; white-space: normal; overflow-wrap: anywhere; }
       .trait-list { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) minmax(0, max-content); column-gap: .5em; margin: .5em 0 0 calc(10px + .4rem); }
       .trait-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
-      .trait-row input { width: 100%; min-width: 0; margin: 0; accent-color: #aaa; }
-      .trait-row input:focus { accent-color: #80b8f5; outline: none; }
-      @media (forced-colors: active) { .trait-row input:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; } }
+      .trait-row input { width: 100%; min-width: 0; margin: 0; }
+      @media (forced-colors: none) {
+        .trait-row input {
+          --slider-color: #aaa;
+          --slider-track: linear-gradient(to right, var(--slider-color) var(--slider-progress), transparent var(--slider-progress)),
+            linear-gradient(#bbb, #bbb) top / 100% 1px no-repeat,
+            linear-gradient(#bbb, #bbb) bottom / 100% 1px no-repeat,
+            linear-gradient(#bbb, #bbb) left / 1px 100% no-repeat,
+            linear-gradient(#bbb, #bbb) right / 1px 100% no-repeat;
+          appearance: none; height: 16px; background: transparent; outline: none;
+        }
+        .trait-row input:focus { --slider-color: #80b8f5; }
+        .trait-row input::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: var(--slider-track); }
+        .trait-row input::-moz-range-track { height: 8px; border-radius: 4px; background: var(--slider-track); }
+        .trait-row input::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; margin-top: -3px; border: 0; border-radius: 50%; background: var(--slider-color); }
+        .trait-row input::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--slider-color); }
+      }
       .trait-row span { overflow-wrap: anywhere; }
       .trait-row span:last-child { text-align: right; }
       .dimension-row { margin: .5em 0; }
@@ -1356,6 +1370,10 @@
         updatePersonModifiedBadge(person);
       }
 
+      function updateSliderFill(slider) {
+        slider.style.setProperty("--slider-progress", `${slider.value}%`);
+      }
+
       function renderPeople() {
         updatePeopleFilter();
         const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
@@ -1573,12 +1591,14 @@
             slider.max = "100";
             slider.step = "1";
             slider.value = String(person.values[trait.id] ?? 50);
+            updateSliderFill(slider);
             slider.dataset.traitId = trait.id;
             slider.setAttribute("aria-label", `${traitLabel(trait)} score for ${person.name || "person"}`);
             slider.setAttribute("aria-describedby", "trait-slider-instructions");
             const highLabel = document.createElement("span");
             highLabel.textContent = trait.name;
             slider.addEventListener("input", () => {
+              updateSliderFill(slider);
               const value = Number(slider.value);
               if (person.values[trait.id] === value) return;
               person.values[trait.id] = value;
@@ -1772,6 +1792,7 @@
         if (!card) return;
         for (const slider of card.querySelectorAll("input[type=range]")) {
           slider.value = String(person.values[slider.dataset.traitId]);
+          updateSliderFill(slider);
         }
       }
 
