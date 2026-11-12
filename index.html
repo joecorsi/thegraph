@@ -142,9 +142,11 @@
       .person-summary button { justify-self: start; }
       .person-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
       .person-actions button { width: 100%; min-width: 0; padding: 1px 0; }
-      .graph-action { padding: 1px 3px; }
+      .graph-action { display: grid; place-items: center; padding: 1px 3px; }
+      /* Preserve the height of the text buttons while centering the icons. */
+      .graph-action::before { content: "\200b"; visibility: hidden; grid-area: 1 / 1; }
       .person-actions svg, .graph-action svg { display: block; width: 12px; height: 12px; margin: auto; }
-      .graph-action svg { display: inline-block; vertical-align: middle; }
+      .graph-action svg { grid-area: 1 / 1; }
       .person-visibility[aria-pressed="true"] .visibility-slash { display: none; }
       .person-visibility[aria-pressed="false"] { border: 0; border-radius: 2px; padding: 3px 0; background: #000; color: #fff; }
       .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
