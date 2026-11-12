@@ -142,12 +142,10 @@
       .person-summary button { justify-self: start; }
       .person-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
       .person-actions button { width: 100%; min-width: 0; padding: 1px 0; }
-      .person-actions svg, #delete-graph svg { display: block; width: 12px; height: 12px; margin: auto; }
+      .graph-action { padding: 2px 3px; }
+      .person-actions svg, .graph-action svg { display: block; width: 12px; height: 12px; margin: auto; }
       .person-visibility[aria-pressed="true"] .visibility-slash { display: none; }
       .person-visibility[aria-pressed="false"] { border: 0; border-radius: 2px; padding: 3px 0; background: #000; color: #fff; }
-      #delete-graph { position: relative; }
-      #delete-graph span { visibility: hidden; }
-      #delete-graph svg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
       .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
       .chart-heading h2, .people-heading h2 { font-size: 1.25em; font-weight: normal; }
       .chart-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
@@ -255,8 +253,8 @@
                   <time class="graph-badge" id="graph-created"></time>
                   <time class="graph-badge" id="graph-modified"></time>
                 </span>
-                <button class="button" id="rename-graph" type="button">Rename</button>
-                <button class="button button-danger" id="delete-graph" type="button" aria-label="Delete graph"><span aria-hidden="true">Delete</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                <button class="button graph-action" id="rename-graph" type="button" aria-label="Rename graph" title="Rename graph"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 11.5 11.5 3a1.4 1.4 0 0 1 2 2L5 13.5 2.5 14zM10 4.5l2 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="button button-danger graph-action" id="delete-graph" type="button" aria-label="Delete graph" title="Delete graph"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
                 <button class="button" id="new-graph" type="button">New graph</button>
               </header>
               <div class="chart-space">
