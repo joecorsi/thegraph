@@ -163,8 +163,9 @@
       .person-dates .graph-badge { text-align: center; white-space: normal; overflow-wrap: anywhere; }
       .trait-list { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) minmax(0, max-content); column-gap: .5em; margin: .5em 0 0 calc(10px + .4rem); }
       .trait-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
-      .trait-row input { width: 100%; min-width: 0; margin: 0; accent-color: #767676; }
-      .trait-row input:focus { accent-color: #00f; }
+      .trait-row input { width: 100%; min-width: 0; margin: 0; accent-color: #aaa; }
+      .trait-row input:focus { accent-color: #80b8f5; outline: none; }
+      @media (forced-colors: active) { .trait-row input:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; } }
       .trait-row span { overflow-wrap: anywhere; }
       .trait-row span:last-child { text-align: right; }
       .dimension-row { margin: .5em 0; }
