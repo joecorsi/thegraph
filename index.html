@@ -109,8 +109,10 @@
       #people-filter-menu button { display: grid; grid-template-columns: 1fr auto; gap: 1em; width: 100%; border: 0; padding: 1px 4px; background: #fff; color: #000; font: 13.3333px Arial, sans-serif; text-align: left; cursor: pointer; }
       #people-filter-menu button[aria-checked="true"], #people-filter-menu button:hover, #people-filter-menu button:focus-visible { outline: none; background: #00f; color: #fff; }
       #people-filter-menu button span:last-child { text-align: right; }
-      #people-sort-toggle svg { display: block; width: 14px; height: 14px; }
-      #people-sort-toggle span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+      #people-sort-toggle { position: relative; }
+      #people-sort-toggle svg { position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%); }
+      #people-sort-toggle .sort-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+      #people-sort-toggle .sort-size { visibility: hidden; }
       .people-list { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
       #add-person-form { flex-wrap: nowrap; min-width: 0; gap: .4rem; }
       #add-person-form button[type=submit] { width: var(--person-action-width); flex: none; }
@@ -129,7 +131,7 @@
       .person-relationship select { position: fixed; z-index: 20; min-width: 0; }
       .person-relationship .dropdown-highlight { position: fixed; z-index: 21; }
       .person-relationship .dropdown-hover { z-index: 22; }
-      .person-age { appearance: textfield; flex: none; width: calc(3.5rem - 20px); min-width: 0; box-sizing: border-box; text-align: right; }
+      .person-age { appearance: textfield; flex: none; width: calc(3.5rem - 20px); min-width: 0; box-sizing: border-box; text-align: center; }
       .person-age::-webkit-inner-spin-button, .person-age::-webkit-outer-spin-button { appearance: none; margin: 0; }
       .person-summary button { justify-self: start; }
       .person-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
@@ -143,7 +145,12 @@
       .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
       .chart-heading h2, .people-heading h2 { font-size: 1.25em; font-weight: normal; }
       .chart-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
-      .relationship-colors { display: flex; align-items: center; font-size: .85em; white-space: nowrap; }
+      .graph-options { position: relative; }
+      .graph-options-toggle { position: relative; padding-right: 24px; padding-left: 2px; text-align: left; }
+      .graph-options-toggle::after { content: ""; position: absolute; right: 6px; top: 50%; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid currentColor; transform: translateY(-50%); pointer-events: none; }
+      .graph-options-menu:not([hidden]) { position: absolute; z-index: 4; bottom: 100%; left: 0; min-width: 100%; width: max-content; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; background: #fff; color: #000; }
+      .graph-options-menu label { display: flex; align-items: center; padding: 1px 4px; white-space: nowrap; font: 13.3333px Arial, sans-serif; cursor: pointer; }
+      .graph-options-separator { display: block; border-top: 1px solid #767676; margin: 3px 4px; }
       .privacy-note { margin: 0 0 0 auto; text-align: right; font-size: .85em; }
       .trait-list { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) minmax(0, max-content); column-gap: .5em; margin: .5em 0 0 calc(10px + .4rem); }
       .trait-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
@@ -254,7 +261,18 @@
                     <p class="chart-hint">Drag a person to adjust</p>
                   </div>
                   <div class="chart-footer">
-                    <label class="relationship-colors"><input type="checkbox" id="relationship-colors"> Color by relationship</label>
+                    <span class="graph-options">
+                      <button class="graph-options-toggle" id="graph-options-toggle" type="button" aria-expanded="false" aria-controls="graph-options-menu">Options</button>
+                      <span class="graph-options-menu" id="graph-options-menu" role="group" aria-label="Graph options" hidden>
+                        <label><input type="checkbox" id="relationship-colors"> Color by relationship</label>
+                        <label><input type="checkbox" id="show-names"> Names</label>
+                        <span class="graph-options-separator" role="separator"></span>
+                        <label><input type="checkbox" data-graph-relationship="friend"> Friend</label>
+                        <label><input type="checkbox" data-graph-relationship="family"> Family</label>
+                        <label><input type="checkbox" data-graph-relationship="enemy"> Foe</label>
+                        <label><input type="checkbox" data-graph-relationship="lover"> Lover</label>
+                      </span>
+                    </span>
                     <p class="privacy-note">Your graphs are private to your account</p>
                   </div>
                 </div>
@@ -273,10 +291,11 @@
                       <button type="button" role="menuitemradio" aria-checked="false" data-filter="friend"><span>Friends</span><span>0</span></button>
                       <button type="button" role="menuitemradio" aria-checked="false" data-filter="enemy"><span>Foes</span><span>0</span></button>
                       <button type="button" role="menuitemradio" aria-checked="false" data-filter="lover"><span>Lovers</span><span>0</span></button>
+                      <button type="button" role="menuitemradio" aria-checked="false" data-filter="family"><span>Family</span><span>0</span></button>
                     </div>
                   </span>
                   <span class="people-sort">
-                    <button id="people-sort-toggle" type="button" aria-label="Sort people" aria-haspopup="listbox" aria-expanded="false" aria-controls="people-sort-select" title="Sort people"><span></span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M2 7h8M2 11h4M11 9v5m-2-2 2 2 2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button id="people-sort-toggle" type="button" aria-label="Sort people" aria-haspopup="listbox" aria-expanded="false" aria-controls="people-sort-select" title="Sort people"><span class="sort-label"></span><span class="sort-size" aria-hidden="true">Sort</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M2 7h8M2 11h4M11 9v5m-2-2 2 2 2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <select id="people-sort-select" aria-label="Sort people" size="4" hidden>
                       <option value="recent" selected>Creation order</option>
                       <option value="name">Alphabetical (A–Z)</option>
@@ -289,9 +308,10 @@
                   <input id="new-person-name" type="text" size="31" maxlength="40" placeholder="Name" aria-label="New person's name">
                   <span class="person-relationship">
                     <button class="relationship-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="new-person-relationship"><span>None</span></button>
-                    <select id="new-person-relationship" aria-label="New person's relationship" size="4" hidden>
+                    <select id="new-person-relationship" aria-label="New person's relationship" size="5" hidden>
                       <option value="" selected>None</option>
                       <option value="friend">Friend</option>
+                      <option value="family">Family</option>
                       <option value="enemy">Foe</option>
                       <option value="lover">Lover</option>
                     </select>
@@ -420,7 +440,8 @@
       const CONFIG_KEY = "people-map-supabase-config";
       const BACKGROUND_KEY = "the-pear-background";
       const AGE_AXIS = "__person_age__";
-      const RELATIONSHIP_COLORS = { friend: "#009b4f", enemy: "#382110", lover: "#f25416" };
+      const NAME_FOCUS_RING_DURATION = 400;
+      const RELATIONSHIP_COLORS = { friend: "#009b4f", enemy: "#382110", lover: "#f25416", family: "#7441a6" };
       const UNCLASSIFIED_COLOR = "#d3d3d3";
       const relationshipColor = person => RELATIONSHIP_COLORS[person.relationship] ?? UNCLASSIFIED_COLOR;
       const DEFAULT_CONFIG = {
@@ -505,7 +526,11 @@
         yAxes: [document.getElementById("y-axis-low"), document.getElementById("y-axis-high")],
         chart: document.getElementById("chart"),
         chartHint: document.querySelector(".chart-hint"),
+        graphOptionsToggle: document.getElementById("graph-options-toggle"),
+        graphOptionsMenu: document.getElementById("graph-options-menu"),
         relationshipColors: document.getElementById("relationship-colors"),
+        showNames: document.getElementById("show-names"),
+        graphRelationships: document.querySelectorAll("[data-graph-relationship]"),
         peopleList: document.getElementById("people-list"),
         dimensions: document.getElementById("dimensions"),
         traitsDialog: document.getElementById("traits-dialog"),
@@ -539,8 +564,12 @@
       let appNoticeTimer = null;
       let chartDrag = null;
       let hoveredPersonId = null;
+      let focusedNamePersonId = null;
+      let nameFocusRingStart = null;
+      let nameFocusRingFrame = null;
       let selectedPersonId = null;
       let foregroundPersonId = null;
+      const graphOpenedPeople = new Set();
       let peopleFilter = "";
       let chartLabelHits = [];
       let creatingGraph = false;
@@ -567,7 +596,9 @@
           people: [],
           xTrait: "openness",
           yTrait: "energy",
-          colorByRelationship: false
+          colorByRelationship: false,
+          hideNames: false,
+          hiddenRelationships: []
         };
       }
 
@@ -865,6 +896,9 @@
             (trait.opposite === undefined || typeof trait.opposite === "string")) &&
           Array.isArray(value.people) &&
           (value.colorByRelationship === undefined || typeof value.colorByRelationship === "boolean") &&
+          (value.hideNames === undefined || typeof value.hideNames === "boolean") &&
+          (value.hiddenRelationships === undefined || (Array.isArray(value.hiddenRelationships) &&
+            value.hiddenRelationships.every(relationship => typeof relationship === "string" && Object.hasOwn(RELATIONSHIP_COLORS, relationship)))) &&
           value.people.every(person =>
             person && typeof person.id === "string" && typeof person.name === "string" &&
             (person.age === undefined || (Number.isSafeInteger(person.age) && person.age >= 0)) &&
@@ -894,7 +928,9 @@
           people,
           xTrait: value.xTrait === AGE_AXIS || traitIds.has(value.xTrait) ? value.xTrait : traits[0]?.id,
           yTrait: value.yTrait === AGE_AXIS || traitIds.has(value.yTrait) ? value.yTrait : (traits[1]?.id ?? traits[0]?.id),
-          colorByRelationship: value.colorByRelationship ?? false
+          colorByRelationship: value.colorByRelationship ?? false,
+          hideNames: value.hideNames ?? false,
+          hiddenRelationships: value.hiddenRelationships ? [...value.hiddenRelationships] : []
         };
       }
 
@@ -977,6 +1013,10 @@
         const nextUser = session?.user ?? null;
         if (currentUser?.id === nextUser?.id && nextUser && !el.workspace.hidden) return;
         closePeopleFilter();
+        closeGraphOptions();
+        graphOpenedPeople.clear();
+        focusedNamePersonId = null;
+        stopNameFocusRing();
         if (el.deletePersonDialog.open) el.deletePersonDialog.close();
         currentUser = nextUser;
         if (!currentUser) {
@@ -1031,13 +1071,17 @@
       function activateGraph(graph) {
         const created = new Date(graph.created_at);
         if (!graph.created_at || Number.isNaN(created.getTime())) throw new Error("The graph's creation date is unavailable.");
+        closeGraphOptions();
         activeGraphId = graph.id;
         activeGraphName = graph.name;
         el.graphCreated.dateTime = graph.created_at;
         el.graphCreated.textContent = `Created ${created.toLocaleDateString()}`;
         hoveredPersonId = null;
+        focusedNamePersonId = null;
+        stopNameFocusRing();
         selectedPersonId = null;
         foregroundPersonId = null;
+        graphOpenedPeople.clear();
         el.chart.setAttribute("aria-label", "Scatter plot of people by selected traits. Select a person, then use arrow keys to adjust.");
         chartLabelHits = [];
         state = normalizeState(graph.data);
@@ -1241,6 +1285,18 @@
           nameInput.placeholder = `Person ${personIndex + 1}`;
           nameInput.value = person.name;
           nameInput.setAttribute("aria-label", `Name for person ${personIndex + 1}`);
+          nameInput.addEventListener("focus", () => {
+            focusedNamePersonId = person.id;
+            startNameFocusRing();
+            drawChart();
+          });
+          nameInput.addEventListener("blur", () => {
+            if (focusedNamePersonId === person.id) {
+              focusedNamePersonId = null;
+              stopNameFocusRing();
+              drawChart();
+            }
+          });
           nameInput.addEventListener("input", () => {
             person.name = nameInput.value;
             summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
@@ -1281,12 +1337,12 @@
             if (relationship.value) person.relationship = relationship.value;
             else delete person.relationship;
             updatePeopleFilter();
-            if (!matchesPeopleFilter(person)) {
+            if (!isPersonVisibleOnGraph(person)) {
               if (foregroundPersonId === person.id) foregroundPersonId = null;
               if (hoveredPersonId === person.id) hoveredPersonId = null;
               if (selectedPersonId === person.id) selectChartPerson(null);
               else drawChart();
-              setTimeout(() => { if (state) renderPeople(); }, 0);
+              if (!matchesPeopleFilter(person)) setTimeout(() => { if (state) renderPeople(); }, 0);
             } else {
               drawChart();
             }
@@ -1428,6 +1484,10 @@
         return !peopleFilter || person.relationship === peopleFilter;
       }
 
+      function isPersonVisibleOnGraph(person) {
+        return matchesPeopleFilter(person) && !person.hidden && !state.hiddenRelationships.includes(person.relationship);
+      }
+
       function updatePeopleFilter() {
         el.peopleCountLabel.parentElement.dataset.size = `${"8".repeat(String(state.people.length).length)} people`;
         el.peopleCount.classList.toggle("filtered", Boolean(peopleFilter));
@@ -1524,7 +1584,7 @@
       }
 
       function chartPoint(person, bounds, range) {
-        if (!matchesPeopleFilter(person) || person.hidden || ((state.xTrait === AGE_AXIS || state.yTrait === AGE_AXIS) && person.age === undefined)) return null;
+        if (!isPersonVisibleOnGraph(person) || ((state.xTrait === AGE_AXIS || state.yTrait === AGE_AXIS) && person.age === undefined)) return null;
         const score = axis => {
           if (axis !== AGE_AXIS) return Number(person.values[axis] ?? 50) / 100;
           return range.min === range.max ? 0.5 : (person.age - range.min) / (range.max - range.min);
@@ -1544,6 +1604,9 @@
         if (!state || !state.xTrait || !state.yTrait) return null;
         const bounds = chartBounds(point.width, point.height);
         const range = ageRange();
+        const focused = state.people.find(person => person.id === focusedNamePersonId);
+        const focusedPosition = focused && chartPoint(focused, bounds, range);
+        if (focusedPosition && Math.hypot(point.x - focusedPosition.x, point.y - focusedPosition.y) <= 12) return focused;
         for (let i = state.people.length - 1; i >= 0; i--) {
           const position = chartPoint(state.people[i], bounds, range);
           if (position && Math.hypot(point.x - position.x, point.y - position.y) <= 12) return state.people[i];
@@ -1552,6 +1615,9 @@
       }
 
       function labelAtPoint(point) {
+        const focused = chartLabelHits.find(hit => hit.personId === focusedNamePersonId &&
+          point.x >= hit.left && point.x <= hit.right && point.y >= hit.top && point.y <= hit.bottom);
+        if (focused) return focused;
         let label = null;
         let closestDistance = Infinity;
         for (let i = chartLabelHits.length - 1; i >= 0; i--) {
@@ -1582,10 +1648,45 @@
         drawChart();
       }
 
+      function stopNameFocusRing() {
+        if (nameFocusRingFrame !== null) cancelAnimationFrame(nameFocusRingFrame);
+        nameFocusRingFrame = null;
+        nameFocusRingStart = null;
+      }
+
+      function startNameFocusRing() {
+        stopNameFocusRing();
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        nameFocusRingStart = performance.now();
+        const animate = () => {
+          if (performance.now() - nameFocusRingStart >= NAME_FOCUS_RING_DURATION) {
+            stopNameFocusRing();
+            drawChart();
+            return;
+          }
+          drawChart();
+          nameFocusRingFrame = requestAnimationFrame(animate);
+        };
+        nameFocusRingFrame = requestAnimationFrame(animate);
+      }
+
       document.addEventListener("pointerdown", event => {
         if (!event.isPrimary || event.button !== 0 || !selectedPersonId || el.chart.parentElement.contains(event.target)) return;
         hoveredPersonId = null;
         selectChartPerson(null);
+      }, true);
+
+      document.addEventListener("click", event => {
+        if (event.button !== 0 || !graphOpenedPeople.size || el.chart.parentElement.contains(event.target)) return;
+        const graphId = activeGraphId;
+        const personIds = new Set(graphOpenedPeople);
+        graphOpenedPeople.clear();
+        setTimeout(() => {
+          if (activeGraphId !== graphId) return;
+          for (const card of el.peopleList.children) {
+            if (personIds.has(card.dataset.personId)) card.open = false;
+          }
+        }, 0);
       }, true);
 
       el.chart.addEventListener("pointerdown", event => {
@@ -1705,6 +1806,7 @@
         const card = [...el.peopleList.children].find(item => item.dataset.personId === personId);
         if (!card) return;
         card.open = true;
+        graphOpenedPeople.add(personId);
         el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
       });
 
@@ -1754,7 +1856,7 @@
         })).filter(item => item.point);
         const count = plotted.length;
         el.peopleCountLabel.textContent = `${count} ${count === 1 ? "person" : "people"}`;
-        const labels = plotted.map(({ person, index, point }) => {
+        const labels = state.hideNames ? [] : plotted.map(({ person, index, point }) => {
           const { x, y } = point;
           const text = person.name.trim() || `Person ${index + 1}`;
           const metrics = context.measureText(text);
@@ -1773,9 +1875,11 @@
           };
         });
         chartLabelHits = labels.map(label => label.hit);
-        const hoveredIndex = plotted.findIndex(({ person }) => person.id === (hoveredPersonId ?? selectedPersonId));
+        const hoveredIndex = plotted.findIndex(({ person }) => person.id === (focusedNamePersonId ?? hoveredPersonId ?? selectedPersonId));
         const foregroundIndex = plotted.findIndex(({ person }) => person.id === foregroundPersonId);
-        plotted.forEach(({ person, point }, index) => {
+        const focusedIndex = plotted.findIndex(({ person }) => person.id === focusedNamePersonId);
+        const drawDot = index => {
+          const { person, point } = plotted[index];
           const { x, y } = point;
           context.globalAlpha = hoveredIndex !== -1 && index !== hoveredIndex ? 0.4 : 1;
           context.fillStyle = state.colorByRelationship
@@ -1786,6 +1890,9 @@
           context.arc(x, y, personDotRadius, 0, Math.PI * 2);
           context.fill();
           context.stroke();
+        };
+        plotted.forEach((_, index) => {
+          if (index !== focusedIndex) drawDot(index);
         });
         context.globalAlpha = 1;
         const drawLabel = (index, hovered = false) => {
@@ -1802,12 +1909,15 @@
             ? relationshipColor(plotted[index].person) : "#000";
           context.fillText(text, labelX, labelY);
         };
-        plotted.forEach((_, index) => {
-          if (index !== hoveredIndex && index !== foregroundIndex) drawLabel(index);
-        });
-        if (foregroundIndex !== -1 && foregroundIndex !== hoveredIndex) drawLabel(foregroundIndex);
+        if (!state.hideNames) {
+          plotted.forEach((_, index) => {
+            if (index !== hoveredIndex && index !== foregroundIndex) drawLabel(index);
+          });
+          if (foregroundIndex !== -1 && foregroundIndex !== hoveredIndex) drawLabel(foregroundIndex);
+        }
+        if (focusedIndex !== -1) drawDot(focusedIndex);
         if (hoveredIndex !== -1) {
-          drawLabel(hoveredIndex, true);
+          if (!state.hideNames) drawLabel(hoveredIndex, true);
           const { x, y } = plotted[hoveredIndex].point;
           context.strokeStyle = "#333";
           context.lineWidth = 1.5;
@@ -1819,11 +1929,25 @@
           context.setLineDash([]);
           context.lineCap = "butt";
         }
+        if (focusedIndex !== -1 && nameFocusRingStart !== null) {
+          const progress = Math.min(1, (performance.now() - nameFocusRingStart) / NAME_FOCUS_RING_DURATION);
+          const { x, y } = plotted[focusedIndex].point;
+          context.globalAlpha = 1 - progress;
+          context.strokeStyle = "#333";
+          context.lineWidth = 2;
+          context.beginPath();
+          context.arc(x, y, 9 + 17 * progress, 0, Math.PI * 2);
+          context.stroke();
+        }
         context.globalAlpha = 1;
       }
 
       function render() {
         el.relationshipColors.checked = state.colorByRelationship;
+        el.showNames.checked = !state.hideNames;
+        for (const checkbox of el.graphRelationships) {
+          checkbox.checked = !state.hiddenRelationships.includes(checkbox.dataset.graphRelationship);
+        }
         renderAxes();
         renderPeople();
         renderDimensions();
@@ -2213,11 +2337,59 @@
         }
       });
 
+      function closeGraphOptions(restoreFocus = false) {
+        if (el.graphOptionsMenu.hidden) return;
+        el.graphOptionsMenu.hidden = true;
+        el.graphOptionsToggle.setAttribute("aria-expanded", "false");
+        if (restoreFocus) el.graphOptionsToggle.focus();
+      }
+
+      el.graphOptionsToggle.addEventListener("click", () => {
+        if (!el.graphOptionsMenu.hidden) {
+          closeGraphOptions();
+          return;
+        }
+        el.graphOptionsMenu.hidden = false;
+        el.graphOptionsToggle.setAttribute("aria-expanded", "true");
+      });
+      el.graphOptionsToggle.parentElement.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeGraphOptions(true);
+        }
+      });
+      el.graphOptionsToggle.parentElement.addEventListener("focusout", event => {
+        if (!el.graphOptionsToggle.parentElement.contains(event.relatedTarget)) closeGraphOptions();
+      });
+      document.addEventListener("pointerdown", event => {
+        if (!el.graphOptionsToggle.parentElement.contains(event.target)) closeGraphOptions();
+      });
       el.relationshipColors.addEventListener("change", () => {
         state.colorByRelationship = el.relationshipColors.checked;
         drawChart();
         scheduleSave();
       });
+      el.showNames.addEventListener("change", () => {
+        state.hideNames = !el.showNames.checked;
+        hoveredPersonId = null;
+        drawChart();
+        scheduleSave();
+      });
+      for (const checkbox of el.graphRelationships) {
+        checkbox.addEventListener("change", () => {
+          const relationship = checkbox.dataset.graphRelationship;
+          state.hiddenRelationships = state.hiddenRelationships.filter(item => item !== relationship);
+          if (!checkbox.checked) {
+            state.hiddenRelationships.push(relationship);
+            const belongsToRelationship = id => state.people.some(person => person.id === id && person.relationship === relationship);
+            if (belongsToRelationship(foregroundPersonId)) foregroundPersonId = null;
+            if (belongsToRelationship(hoveredPersonId)) hoveredPersonId = null;
+            if (belongsToRelationship(selectedPersonId)) selectChartPerson(null);
+          }
+          drawChart();
+          scheduleSave();
+        });
+      }
 
       el.peopleSortSelect.addEventListener("change", sortPeopleCards);
 
