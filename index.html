@@ -6,6 +6,8 @@
     <title>The Pear</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%90%3C/text%3E%3C/svg%3E">
     <style>
+      :root { --highlight-blue: #0075ff; }
+      @supports (color: AccentColor) { :root { --highlight-blue: AccentColor; } }
       html[data-background="rainbow"] { background: radial-gradient(ellipse at 25% 20%, #ffffffb3, transparent 38%), conic-gradient(from 225deg at 55% 50%, #ff8fcd, #ffc483, #f8ef8b, #91e9bd, #8fd8ff, #c0a3f6, #ff8fcd); background-attachment: fixed; }
       body { isolation: isolate; margin: 18px 25px; }
       .rainbow-decor { display: none; position: fixed; inset: -16.6667vh -12.5vw; z-index: -1; overflow: hidden; pointer-events: none; }
@@ -42,7 +44,7 @@
       #background-select { right: 0; bottom: 100%; max-height: calc(100dvh - 5em); }
       #graph-select { left: 0; top: 100%; }
       #background-select option, #graph-select option, #people-sort-select option, .axis-end option, .person-relationship option { padding: 1px 4px; }
-      .dropdown-highlight { position: absolute; z-index: 3; overflow: hidden; color: #fff; background: #00f; pointer-events: none; }
+      .dropdown-highlight { position: absolute; z-index: 3; overflow: hidden; color: #fff; background: var(--highlight-blue); pointer-events: none; }
       .dropdown-highlight span { position: absolute; box-sizing: border-box; padding: 1px 4px; overflow: hidden; white-space: nowrap; }
       .dropdown-hover { z-index: 4; }
       #graph-select option, .graph-select .dropdown-highlight span { padding-left: 3px; }
@@ -102,7 +104,7 @@
       .people-filter { margin-left: auto; }
       .people-filter, .people-sort { position: relative; }
       #people-count { cursor: pointer; white-space: nowrap; }
-      #people-count.filtered { border: 0; border-radius: 2px; padding: 3px 8px; background: #00f; color: #fff; }
+      #people-count.filtered { border: 0; border-radius: 2px; padding: 3px 8px; background: var(--highlight-blue); color: #fff; }
       .people-count-content { display: grid; }
       .people-count-content > span, .people-count-content::before, .people-count-content::after { grid-area: 1 / 1; }
       .people-count-content::before { content: "1 person"; visibility: hidden; }
@@ -110,7 +112,7 @@
       #people-sort-select { top: 100%; right: 0; width: max-content; }
       #people-filter-menu:not([hidden]) { position: absolute; z-index: 2; top: 100%; right: 0; min-width: 110px; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; background: #fff; }
       #people-filter-menu button { display: grid; grid-template-columns: 1fr auto; gap: 1em; width: 100%; border: 0; padding: 1px 4px; background: #fff; color: #000; font: 13.3333px Arial, sans-serif; text-align: left; cursor: pointer; }
-      #people-filter-menu button[aria-checked="true"], #people-filter-menu button:hover, #people-filter-menu button:focus-visible { outline: none; background: #00f; color: #fff; }
+      #people-filter-menu button[aria-checked="true"], #people-filter-menu button:hover, #people-filter-menu button:focus-visible { outline: none; background: var(--highlight-blue); color: #fff; }
       #people-filter-menu button span:last-child { text-align: right; }
       #people-sort-toggle { position: relative; }
       #people-sort-toggle svg { position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%); }
@@ -166,11 +168,11 @@
       .trait-row input { width: 100%; min-width: 0; margin: 0; }
       @media (forced-colors: none) {
         .trait-row input {
-          --slider-color: #aaa;
-          --slider-track: linear-gradient(to right, var(--slider-color) var(--slider-progress), #e9e9e9 var(--slider-progress));
+          --slider-color: #b6b6b6;
+          --slider-track: linear-gradient(to right, var(--slider-color) var(--slider-progress), #dcdcdc var(--slider-progress));
           appearance: none; height: 16px; background: transparent; outline: none;
         }
-        .trait-row input:focus { color: #0075ff; color: AccentColor; --slider-color: currentColor; }
+        .trait-row input:focus { color: var(--highlight-blue); --slider-color: currentColor; }
         .trait-row input::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: var(--slider-track); }
         .trait-row input::-moz-range-track { height: 8px; border-radius: 4px; background: var(--slider-track); }
         .trait-row input::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; margin-top: -3px; border: 0; border-radius: 50%; background: var(--slider-color); }
