@@ -14,7 +14,7 @@ The people list shows **Scroll for more** when there are entries or trait slider
 
 Expanded people show their added and last-modified dates. Existing people have unknown dates until edited; copying people to another graph preserves their dates. Person edits, including graph movements and visibility changes, update the modified date.
 
-Use the **Traits** button to add, rename, remove, or swap the ends of traits for the current graph, then choose **Save** or **Cancel**. Swapping ends leaves scores unchanged. Existing traits keep their scores and names as the high end; their low end is shown as "Low" until you name it.
+Use the **Traits** button to add, rename, remove, or swap the ends of traits for the current graph, then choose **Save** or **Cancel**. The trait list scrolls when it exceeds the available dialog height. Swapping ends leaves scores unchanged. Existing traits keep their scores and names as the high end; their low end is shown as "Low" until you name it.
 
 New graphs include the default traits and start with Lame–Cool on the X axis and Benevolent–Malevolent on the Y axis. Changing the defaults does not alter existing saved graphs.
 
