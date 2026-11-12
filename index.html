@@ -1757,6 +1757,9 @@
         if (!state || !state.xTrait || !state.yTrait) return null;
         const bounds = chartBounds(point.width, point.height);
         const range = ageRange();
+        const selected = state.people.find(person => person.id === selectedPersonId);
+        const selectedPosition = selected && chartPoint(selected, bounds, range);
+        if (selectedPosition && Math.hypot(point.x - selectedPosition.x, point.y - selectedPosition.y) <= 12) return selected;
         const focused = state.people.find(person => person.id === focusedNamePersonId);
         const focusedPosition = focused && chartPoint(focused, bounds, range);
         if (focusedPosition && Math.hypot(point.x - focusedPosition.x, point.y - focusedPosition.y) <= 12) return focused;
@@ -1768,6 +1771,9 @@
       }
 
       function labelAtPoint(point) {
+        const selected = chartLabelHits.find(hit => hit.personId === selectedPersonId &&
+          point.x >= hit.left && point.x <= hit.right && point.y >= hit.top && point.y <= hit.bottom);
+        if (selected) return selected;
         const focused = chartLabelHits.find(hit => hit.personId === focusedNamePersonId &&
           point.x >= hit.left && point.x <= hit.right && point.y >= hit.top && point.y <= hit.bottom);
         if (focused) return focused;
@@ -1783,6 +1789,15 @@
           }
         }
         return label;
+      }
+
+      function chartHitAtPoint(point) {
+        const person = personAtPoint(point);
+        const label = labelAtPoint(point);
+        if (label?.personId === selectedPersonId && person?.id !== selectedPersonId) {
+          return { person: null, personId: selectedPersonId };
+        }
+        return { person, personId: person?.id ?? label?.personId ?? null };
       }
 
       function updatePersonSliders(person) {
@@ -1846,9 +1861,8 @@
       el.chart.addEventListener("pointerdown", event => {
         if (!event.isPrimary || event.button !== 0 || chartDrag) return;
         const point = pointerPosition(event);
-        const person = personAtPoint(point);
-        const labelPerson = state?.people.find(item => item.id === labelAtPoint(point)?.personId);
-        const selected = person ?? labelPerson ?? null;
+        const { person, personId } = chartHitAtPoint(point);
+        const selected = state?.people.find(item => item.id === personId) ?? null;
         if (selected) foregroundPersonId = selected.id;
         selectChartPerson(selected);
         el.chart.focus({ preventScroll: true });
@@ -1872,9 +1886,7 @@
       el.chart.addEventListener("pointermove", event => {
         const point = pointerPosition(event);
         if (!chartDrag) {
-          const label = labelAtPoint(point);
-          const pointPerson = personAtPoint(point);
-          const personId = pointPerson?.id ?? label?.personId ?? null;
+          const { person: pointPerson, personId } = chartHitAtPoint(point);
           if (personId !== hoveredPersonId) {
             hoveredPersonId = personId;
             drawChart();
@@ -1913,7 +1925,7 @@
         chartDrag = null;
         hoveredPersonId = null;
         el.chart.style.cursor = event.type === "pointerup" && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) &&
-          personAtPoint(pointerPosition(event)) ? "move" : "";
+          chartHitAtPoint(pointerPosition(event)).person ? "move" : "";
         drawChart();
       }
 
@@ -1961,9 +1973,7 @@
       });
       el.chart.addEventListener("dblclick", event => {
         const point = pointerPosition(event);
-        const label = labelAtPoint(point);
-        const pointPerson = personAtPoint(point);
-        const personId = pointPerson?.id ?? label?.personId;
+        const { personId } = chartHitAtPoint(point);
         if (!personId) return;
         const card = [...el.peopleList.children].find(item => item.dataset.personId === personId);
         if (!card) return;
@@ -2042,10 +2052,11 @@
         const hoveredIndex = plotted.findIndex(({ person }) => person.id === (focusedNamePersonId ?? hoveredPersonId ?? selectedPersonId));
         const foregroundIndex = plotted.findIndex(({ person }) => person.id === foregroundPersonId);
         const focusedIndex = plotted.findIndex(({ person }) => person.id === focusedNamePersonId);
+        const selectedIndex = plotted.findIndex(({ person }) => person.id === selectedPersonId);
         const drawDot = index => {
           const { person, point } = plotted[index];
           const { x, y } = point;
-          context.globalAlpha = hoveredIndex !== -1 && index !== hoveredIndex ? 0.4 : 1;
+          context.globalAlpha = hoveredIndex !== -1 && index !== hoveredIndex && index !== selectedIndex ? 0.4 : 1;
           context.fillStyle = state.colorByRelationship
             ? relationshipColor(person) : person.color;
           context.strokeStyle = "#fff";
@@ -2056,7 +2067,7 @@
           context.stroke();
         };
         plotted.forEach((_, index) => {
-          if (index !== focusedIndex) drawDot(index);
+          if (index !== focusedIndex && index !== selectedIndex) drawDot(index);
         });
         context.globalAlpha = 1;
         const drawLabel = (index, hovered = false) => {
@@ -2075,14 +2086,15 @@
         };
         if (!state.hideNames) {
           plotted.forEach((_, index) => {
-            if (index !== hoveredIndex && index !== foregroundIndex) drawLabel(index);
+            if (index !== hoveredIndex && index !== foregroundIndex && index !== selectedIndex) drawLabel(index);
           });
-          if (foregroundIndex !== -1 && foregroundIndex !== hoveredIndex) drawLabel(foregroundIndex);
+          if (foregroundIndex !== -1 && foregroundIndex !== hoveredIndex && foregroundIndex !== selectedIndex) drawLabel(foregroundIndex);
         }
-        if (focusedIndex !== -1) drawDot(focusedIndex);
-        if (hoveredIndex !== -1) {
-          if (!state.hideNames) drawLabel(hoveredIndex, true);
-          const { x, y } = plotted[hoveredIndex].point;
+        if (focusedIndex !== -1 && focusedIndex !== selectedIndex) drawDot(focusedIndex);
+        const drawHighlight = index => {
+          if (!state.hideNames) drawLabel(index, true);
+          const { x, y } = plotted[index].point;
+          context.globalAlpha = 1;
           context.strokeStyle = "#333";
           context.lineWidth = 1.5;
           context.lineCap = "round";
@@ -2092,7 +2104,8 @@
           context.stroke();
           context.setLineDash([]);
           context.lineCap = "butt";
-        }
+        };
+        if (hoveredIndex !== -1 && hoveredIndex !== selectedIndex) drawHighlight(hoveredIndex);
         if (focusedIndex !== -1 && nameFocusRingStart !== null) {
           const progress = Math.min(1, (performance.now() - nameFocusRingStart) / RING_EXPANSION_DURATION);
           const { x, y } = plotted[focusedIndex].point;
@@ -2115,6 +2128,10 @@
           context.beginPath();
           context.arc(point.x, point.y, 9 + 17 * progress, 0, Math.PI * 2);
           context.stroke();
+        }
+        if (selectedIndex !== -1) {
+          drawDot(selectedIndex);
+          drawHighlight(selectedIndex);
         }
         context.globalAlpha = 1;
         if (awaitingPlacement.length && !reducedMotion.matches) {
