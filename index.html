@@ -2487,7 +2487,6 @@
         render();
         const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
         if (card) {
-          card.open = true;
           el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
         } else {
           showNotice(el.appNotice, "Person added, but not shown by the current relationship filter.");
