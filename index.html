@@ -77,7 +77,9 @@
       .chart-space { flex: 1; min-height: 0; container-type: size; }
       .chart-body { width: min(100%, 100cqh - var(--chart-footer-space, 2em)); }
       .chart-frame { --plot-inset: 20px; position: relative; box-sizing: border-box; border: 1px solid rgba(0, 0, 0, .15); border-radius: 8px; }
+      .chart-frame:focus-within { border-color: #000; }
       #chart { display: block; width: 100%; aspect-ratio: 1; border-radius: inherit; touch-action: none; }
+      #chart:focus { outline: none; }
       .chart-hint { position: absolute; left: 8px; top: 6px; max-width: calc(50% - 16px); margin: 0; color: #000; font-size: .85em; pointer-events: none; }
       .axis-end { position: absolute; max-width: calc(50% - var(--plot-inset) - 12px); color: #000; }
       .axis-end:focus-within { z-index: 3; }
@@ -440,8 +442,8 @@
       const CONFIG_KEY = "people-map-supabase-config";
       const BACKGROUND_KEY = "the-pear-background";
       const AGE_AXIS = "__person_age__";
-      const NAME_FOCUS_RING_DURATION = 400;
-      const PLACEMENT_RING_INTERVAL = 1200;
+      const RING_EXPANSION_DURATION = 650;
+      const PLACEMENT_RING_INTERVAL = 1450;
       const RELATIONSHIP_COLORS = { friend: "#009b4f", enemy: "#382110", lover: "#f25416", family: "#7441a6" };
       const UNCLASSIFIED_COLOR = "#d3d3d3";
       const relationshipColor = person => RELATIONSHIP_COLORS[person.relationship] ?? UNCLASSIFIED_COLOR;
@@ -1676,7 +1678,7 @@
         if (reducedMotion.matches) return;
         nameFocusRingStart = performance.now();
         const animate = () => {
-          if (performance.now() - nameFocusRingStart >= NAME_FOCUS_RING_DURATION) {
+          if (performance.now() - nameFocusRingStart >= RING_EXPANSION_DURATION) {
             stopNameFocusRing();
             drawChart();
             return;
@@ -1955,7 +1957,7 @@
           context.lineCap = "butt";
         }
         if (focusedIndex !== -1 && nameFocusRingStart !== null) {
-          const progress = Math.min(1, (performance.now() - nameFocusRingStart) / NAME_FOCUS_RING_DURATION);
+          const progress = Math.min(1, (performance.now() - nameFocusRingStart) / RING_EXPANSION_DURATION);
           const { x, y } = plotted[focusedIndex].point;
           context.globalAlpha = 1 - progress;
           context.strokeStyle = "#333";
@@ -1966,7 +1968,7 @@
         }
         const awaitingPlacement = plotted.filter(({ person }) => person.awaitingPlacement);
         const placementProgress = reducedMotion.matches ? 0.3 :
-          Math.min(1, (performance.now() % PLACEMENT_RING_INTERVAL) / NAME_FOCUS_RING_DURATION);
+          Math.min(1, (performance.now() % PLACEMENT_RING_INTERVAL) / RING_EXPANSION_DURATION);
         for (const { point } of awaitingPlacement) {
           const progress = placementProgress;
           if (progress === 1) continue;
