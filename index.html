@@ -101,6 +101,10 @@
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
       .people-content { --person-action-width: 3.5rem; display: grid; flex: 1; grid-template-rows: auto auto minmax(0, 1fr); width: fit-content; max-width: 100%; min-height: 0; }
+      .people-heading { gap: .3em; }
+      #people-expand-all { display: grid; }
+      #people-expand-all::before { content: "Collapse all"; visibility: hidden; grid-area: 1 / 1; }
+      #people-expand-all span { grid-area: 1 / 1; }
       .people-filter { margin-left: auto; }
       .people-filter, .people-sort { position: relative; }
       #people-count { cursor: pointer; white-space: nowrap; }
@@ -314,6 +318,7 @@
                 <header class="panel-heading people-heading">
                   <h2 id="people-title">People</h2>
                   <button id="open-traits" type="button">Traits</button>
+                  <button id="people-expand-all" type="button" aria-label="Expand all people" aria-controls="people-list" disabled><span>Expand all</span></button>
                   <span class="people-filter">
                     <button id="people-count" type="button" aria-label="Filter people" aria-haspopup="menu" aria-expanded="false" aria-controls="people-filter-menu"><span class="people-count-content" data-size="8 people"><span id="people-count-label">0 people</span></span></button>
                     <div id="people-filter-menu" role="menu" aria-label="Filter people" hidden>
@@ -525,6 +530,7 @@
         graphSelect: document.getElementById("graph-select"),
         graphCreated: document.getElementById("graph-created"),
         graphModified: document.getElementById("graph-modified"),
+        peopleExpandAll: document.getElementById("people-expand-all"),
         peopleCount: document.getElementById("people-count"),
         peopleCountLabel: document.getElementById("people-count-label"),
         peopleFilterMenu: document.getElementById("people-filter-menu"),
@@ -1345,6 +1351,23 @@
       const peopleScrollObserver = new ResizeObserver(updatePeopleScrollHint);
       el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
 
+      function updatePeopleExpandButton() {
+        const cards = [...el.peopleList.children];
+        const collapse = cards.some(card => card.open);
+        const action = collapse ? "Collapse" : "Expand";
+        el.peopleExpandAll.firstElementChild.textContent = `${action} all`;
+        el.peopleExpandAll.setAttribute("aria-label", `${action} all people`);
+        el.peopleExpandAll.disabled = cards.length === 0;
+      }
+
+      el.peopleExpandAll.addEventListener("click", () => {
+        const cards = [...el.peopleList.children];
+        const expand = !cards.some(card => card.open);
+        graphOpenedPeople.clear();
+        for (const card of cards) card.open = expand;
+        updatePeopleExpandButton();
+      });
+
       function setPersonDateBadge(badge, label, value) {
         badge.textContent = `${label} `;
         if (!value) {
@@ -1386,6 +1409,7 @@
           card.className = "person-card";
           card.dataset.personId = person.id;
           card.open = openPeople.has(person.id);
+          card.addEventListener("toggle", updatePeopleExpandButton);
           const summary = document.createElement("summary");
           summary.className = "person-summary";
           summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
@@ -1612,6 +1636,7 @@
           peopleScrollObserver.observe(card);
         }
         el.peopleList.scrollTop = scrollTop;
+        updatePeopleExpandButton();
         updatePeopleScrollHint();
       }
 
@@ -1846,6 +1871,7 @@
 
       document.addEventListener("click", event => {
         if (event.button !== 0 || !graphOpenedPeople.size || el.chart.parentElement.contains(event.target)) return;
+        if (el.peopleExpandAll.contains(event.target)) return;
         const graphId = activeGraphId;
         const personIds = new Set(graphOpenedPeople);
         graphOpenedPeople.clear();
