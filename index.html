@@ -60,7 +60,7 @@
       }
       #sign-in-form .auth-actions button { flex: 1 1 auto; }
       .setup-details { margin: 1em 0; }
-      .layout { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, min(calc(100% - min(40%, 21rem) - 1em), var(--chart-available-width, 100%))) min(40%, 21rem); grid-template-rows: minmax(0, 1fr); justify-content: center; gap: 1em; }
+      .layout { --layout-gap: calc(1em + 5px); display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, min(calc(100% - min(40%, 21rem) - var(--layout-gap)), var(--chart-available-width, 100%))) min(40%, 21rem); grid-template-rows: minmax(0, 1fr); justify-content: center; gap: var(--layout-gap); }
       .graph-select { position: relative; flex: 1 1 90px; min-width: 90px; }
       .graph-dates { display: flex; flex-wrap: wrap; gap: var(--control-gap); }
       .graph-badge { border-radius: 2px; padding: 3px 7px; background: #efefef; color: #000; font: 13.3333px Arial, sans-serif; white-space: nowrap; }
@@ -100,7 +100,7 @@
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
       .people-content { --person-action-width: 3.5rem; display: grid; flex: 1; grid-template-rows: auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
-      .chart-heading, .people-heading { gap: var(--control-gap); padding-block: var(--control-gap); }
+      .chart-heading, .people-heading { gap: var(--control-gap); padding: var(--control-gap) 0 calc(var(--control-gap) + 5px); }
       #open-traits, #people-expand-all, .people-filter, .people-sort { flex: 1 1 auto; }
       #people-expand-all { display: grid; }
       #people-expand-all::before { content: "Collapse all"; visibility: hidden; grid-area: 1 / 1; }
