@@ -157,6 +157,8 @@
       .graph-options-menu label { display: flex; align-items: center; padding: 1px 4px; white-space: nowrap; font: 13.3333px Arial, sans-serif; cursor: pointer; }
       .graph-options-separator { display: block; border-top: 1px solid #767676; margin: 3px 4px; }
       .privacy-note { margin: 0 0 0 auto; text-align: right; font-size: .85em; }
+      .person-dates { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem; margin: .5em 0 0 calc(10px + .4rem); }
+      .person-dates .graph-badge { white-space: normal; }
       .trait-list { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) minmax(0, max-content); column-gap: .5em; margin: .5em 0 0 calc(10px + .4rem); }
       .trait-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
       .trait-row input { width: 100%; min-width: 0; margin: 0; }
@@ -931,6 +933,8 @@
             (person.age === undefined || (Number.isSafeInteger(person.age) && person.age >= 0)) &&
             (person.hidden === undefined || typeof person.hidden === "boolean") &&
             (person.awaitingPlacement === undefined || typeof person.awaitingPlacement === "boolean") &&
+            (person.addedAt === undefined || (typeof person.addedAt === "string" && Number.isFinite(Date.parse(person.addedAt)))) &&
+            (person.modifiedAt === undefined || (typeof person.modifiedAt === "string" && Number.isFinite(Date.parse(person.modifiedAt)))) &&
             (person.relationship === undefined || Object.hasOwn(RELATIONSHIP_COLORS, person.relationship)) &&
             (person.color === undefined || /^#[0-9a-f]{6}$/i.test(person.color)) &&
             person.values && typeof person.values === "object"
@@ -1310,6 +1314,29 @@
       const peopleScrollObserver = new ResizeObserver(updatePeopleScrollHint);
       el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
 
+      function setPersonDateBadge(badge, label, value) {
+        badge.textContent = `${label}: `;
+        if (!value) {
+          badge.append("Unknown");
+          return;
+        }
+        const time = document.createElement("time");
+        time.dateTime = value;
+        time.textContent = new Date(value).toLocaleDateString();
+        badge.append(time);
+      }
+
+      function updatePersonModifiedBadge(person) {
+        const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
+        const badge = card?.querySelector(".person-modified-date");
+        if (badge) setPersonDateBadge(badge, "Modified", person.modifiedAt);
+      }
+
+      function markPersonModified(person) {
+        person.modifiedAt = new Date().toISOString();
+        updatePersonModifiedBadge(person);
+      }
+
       function renderPeople() {
         updatePeopleFilter();
         const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
@@ -1352,7 +1379,9 @@
             }
           });
           nameInput.addEventListener("input", () => {
+            if (person.name === nameInput.value) return;
             person.name = nameInput.value;
+            markPersonModified(person);
             summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
             remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
             updateVisibilityButton();
@@ -1388,8 +1417,10 @@
           relationshipDropdown.sync();
           personDropdowns.push(relationshipDropdown);
           relationship.addEventListener("change", () => {
+            if ((person.relationship ?? "") === relationship.value) return;
             if (relationship.value) person.relationship = relationship.value;
             else delete person.relationship;
+            markPersonModified(person);
             updatePeopleFilter();
             if (!isPersonVisibleOnGraph(person)) {
               if (foregroundPersonId === person.id) foregroundPersonId = null;
@@ -1415,8 +1446,11 @@
               ageInput.reportValidity();
               return;
             }
-            if (ageInput.value === "") delete person.age;
-            else person.age = ageInput.valueAsNumber;
+            const age = ageInput.value === "" ? undefined : ageInput.valueAsNumber;
+            if (person.age === age) return;
+            if (age === undefined) delete person.age;
+            else person.age = age;
+            markPersonModified(person);
             for (const select of [...el.xAxes, ...el.yAxes]) {
               if (select.value === AGE_AXIS) axisDropdowns.get(select).sync();
             }
@@ -1443,6 +1477,7 @@
             event.stopPropagation();
             if (person.hidden) delete person.hidden;
             else person.hidden = true;
+            markPersonModified(person);
             updateVisibilityButton();
             if (person.hidden && foregroundPersonId === person.id) foregroundPersonId = null;
             if (person.hidden && hoveredPersonId === person.id) hoveredPersonId = null;
@@ -1487,6 +1522,16 @@
           actions.append(visibility, remove);
           summary.append(summaryName, actions);
 
+          const dates = document.createElement("div");
+          dates.className = "person-dates";
+          const addedDate = document.createElement("span");
+          addedDate.className = "graph-badge";
+          setPersonDateBadge(addedDate, "Added", person.addedAt);
+          const modifiedDate = document.createElement("span");
+          modifiedDate.className = "graph-badge person-modified-date";
+          setPersonDateBadge(modifiedDate, "Modified", person.modifiedAt);
+          dates.append(addedDate, modifiedDate);
+
           const traitList = document.createElement("div");
           traitList.className = "trait-list";
           for (const trait of state.traits) {
@@ -1505,14 +1550,17 @@
             const highLabel = document.createElement("span");
             highLabel.textContent = trait.name;
             slider.addEventListener("input", () => {
-              person.values[trait.id] = Number(slider.value);
+              const value = Number(slider.value);
+              if (person.values[trait.id] === value) return;
+              person.values[trait.id] = value;
+              markPersonModified(person);
               drawChart();
               scheduleSave();
             });
             row.append(lowLabel, slider, highLabel);
             traitList.append(row);
           }
-          card.append(summary, traitList);
+          card.append(summary, dates, traitList);
           el.peopleList.append(card);
           peopleScrollObserver.observe(card);
         }
@@ -1803,6 +1851,7 @@
         }
         if (person.values[chartDrag.xTrait] !== previousX || person.values[chartDrag.yTrait] !== previousY) {
           delete person.awaitingPlacement;
+          markPersonModified(person);
         }
         updatePersonSliders(person);
         drawChart();
@@ -1854,6 +1903,7 @@
         if (next === value) return;
         person.values[trait] = next;
         delete person.awaitingPlacement;
+        markPersonModified(person);
         hoveredPersonId = null;
         updatePersonSliders(person);
         drawChart();
@@ -2323,12 +2373,14 @@
           return;
         }
         const previousColor = colorPerson.color;
+        const previousModifiedAt = colorPerson.modifiedAt;
         savingColor = true;
         el.saveColor.disabled = true;
         el.cancelColor.disabled = true;
         el.colorFields.inert = true;
         try {
           colorPerson.color = color.toLowerCase();
+          markPersonModified(colorPerson);
           scheduleSave();
           await flushPendingSave();
           colorButton.style.backgroundColor = colorPerson.color;
@@ -2336,6 +2388,9 @@
           el.colorDialog.close();
         } catch (error) {
           colorPerson.color = previousColor;
+          if (previousModifiedAt === undefined) delete colorPerson.modifiedAt;
+          else colorPerson.modifiedAt = previousModifiedAt;
+          updatePersonModifiedBadge(colorPerson);
           scheduleSave();
           setSaveStatus(`Save failed: ${error.message}`, { isError: true });
           showNotice(el.colorNotice, `Couldn't save this color: ${error.message}`);
@@ -2552,8 +2607,9 @@
           return;
         }
         const values = Object.fromEntries(state.traits.map(trait => [trait.id, 50]));
+        const now = new Date().toISOString();
         const person = {
-          id: makeId("person"), name, color: newPersonColor, values, awaitingPlacement: true,
+          id: makeId("person"), name, color: newPersonColor, values, awaitingPlacement: true, addedAt: now, modifiedAt: now,
           ...(el.newPersonRelationship.value === "" ? {} : { relationship: el.newPersonRelationship.value }),
           ...(el.newPersonAge.value === "" ? {} : { age: el.newPersonAge.valueAsNumber })
         };
