@@ -38,10 +38,10 @@
       .background-selector { position: fixed; right: calc(1em + 25px); bottom: calc(1em + 10px); z-index: 1; }
       .background-toggle { display: block; margin-left: auto; }
       .background-toggle::after { content: " ▴"; }
-      #background-select, #graph-select, .axis-end select, .person-relationship select { position: absolute; z-index: 2; min-width: 100%; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; outline: none; color: #000; background: #fff; }
+      #background-select, #graph-select, #people-sort-select, .axis-end select, .person-relationship select { position: absolute; z-index: 2; min-width: 100%; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; outline: none; color: #000; background: #fff; }
       #background-select { right: 0; bottom: 100%; max-height: calc(100dvh - 5em); }
       #graph-select { left: 0; top: 100%; }
-      #background-select option, #graph-select option, .axis-end option, .person-relationship option { padding: 1px 4px; }
+      #background-select option, #graph-select option, #people-sort-select option, .axis-end option, .person-relationship option { padding: 1px 4px; }
       .dropdown-highlight { position: absolute; z-index: 3; overflow: hidden; color: #fff; background: #00f; pointer-events: none; }
       .dropdown-highlight span { position: absolute; box-sizing: border-box; padding: 1px 4px; overflow: hidden; white-space: nowrap; }
       .dropdown-hover { z-index: 4; }
@@ -96,7 +96,21 @@
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
       .people-content { --person-action-width: 3.5rem; display: grid; flex: 1; grid-template-rows: auto auto minmax(0, 1fr); width: fit-content; max-width: 100%; min-height: 0; }
-      #people-count { margin-left: auto; }
+      .people-filter { margin-left: auto; }
+      .people-filter, .people-sort { position: relative; }
+      #people-count { cursor: pointer; white-space: nowrap; }
+      #people-count.filtered { border: 0; border-radius: 2px; padding: 3px 8px; background: #00f; color: #fff; }
+      .people-count-content { display: grid; }
+      .people-count-content > span, .people-count-content::before, .people-count-content::after { grid-area: 1 / 1; }
+      .people-count-content::before { content: "1 person"; visibility: hidden; }
+      .people-count-content::after { content: attr(data-size); visibility: hidden; }
+      #people-sort-select { top: 100%; right: 0; width: max-content; }
+      #people-filter-menu:not([hidden]) { position: absolute; z-index: 2; top: 100%; right: 0; min-width: 110px; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; background: #fff; }
+      #people-filter-menu button { display: grid; grid-template-columns: 1fr auto; gap: 1em; width: 100%; border: 0; padding: 1px 4px; background: #fff; color: #000; font: 13.3333px Arial, sans-serif; text-align: left; cursor: pointer; }
+      #people-filter-menu button[aria-checked="true"], #people-filter-menu button:hover, #people-filter-menu button:focus-visible { outline: none; background: #00f; color: #fff; }
+      #people-filter-menu button span:last-child { text-align: right; }
+      #people-sort-toggle svg { display: block; width: 14px; height: 14px; }
+      #people-sort-toggle span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
       .people-list { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
       #add-person-form { flex-wrap: nowrap; min-width: 0; gap: .4rem; }
       #add-person-form button[type=submit] { width: var(--person-action-width); flex: none; }
@@ -115,11 +129,14 @@
       .person-relationship select { position: fixed; z-index: 20; min-width: 0; }
       .person-relationship .dropdown-highlight { position: fixed; z-index: 21; }
       .person-relationship .dropdown-hover { z-index: 22; }
-      .person-age { appearance: textfield; flex: none; width: calc(3.5rem - 20px); min-width: 0; box-sizing: border-box; text-align: center; }
+      .person-age { appearance: textfield; flex: none; width: calc(3.5rem - 20px); min-width: 0; box-sizing: border-box; text-align: right; }
       .person-age::-webkit-inner-spin-button, .person-age::-webkit-outer-spin-button { appearance: none; margin: 0; }
       .person-summary button { justify-self: start; }
-      .person-summary > button { width: var(--person-action-width); }
-      .person-remove svg, #delete-graph svg { display: block; width: 12px; height: 12px; margin: auto; }
+      .person-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
+      .person-actions button { width: 100%; min-width: 0; padding: 1px 0; }
+      .person-actions svg, #delete-graph svg { display: block; width: 12px; height: 12px; margin: auto; }
+      .person-visibility[aria-pressed="true"] .visibility-slash { display: none; }
+      .person-visibility[aria-pressed="false"] { border: 0; border-radius: 2px; padding: 3px 0; background: #000; color: #fff; }
       #delete-graph { position: relative; }
       #delete-graph span { visibility: hidden; }
       #delete-graph svg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
@@ -249,7 +266,24 @@
                 <header class="panel-heading people-heading">
                   <h2 id="people-title">People</h2>
                   <button id="open-traits" type="button">Traits</button>
-                  <span class="graph-badge" id="people-count"></span>
+                  <span class="people-filter">
+                    <button id="people-count" type="button" aria-label="Filter people" aria-haspopup="menu" aria-expanded="false" aria-controls="people-filter-menu"><span class="people-count-content" data-size="8 people"><span id="people-count-label">0 people</span></span></button>
+                    <div id="people-filter-menu" role="menu" aria-label="Filter people" hidden>
+                      <button type="button" role="menuitemradio" aria-checked="true" data-filter=""><span>All</span><span>0</span></button>
+                      <button type="button" role="menuitemradio" aria-checked="false" data-filter="friend"><span>Friends</span><span>0</span></button>
+                      <button type="button" role="menuitemradio" aria-checked="false" data-filter="enemy"><span>Foes</span><span>0</span></button>
+                      <button type="button" role="menuitemradio" aria-checked="false" data-filter="lover"><span>Lovers</span><span>0</span></button>
+                    </div>
+                  </span>
+                  <span class="people-sort">
+                    <button id="people-sort-toggle" type="button" aria-label="Sort people" aria-haspopup="listbox" aria-expanded="false" aria-controls="people-sort-select" title="Sort people"><span></span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M2 7h8M2 11h4M11 9v5m-2-2 2 2 2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <select id="people-sort-select" aria-label="Sort people" size="4" hidden>
+                      <option value="recent" selected>Creation order</option>
+                      <option value="name">Alphabetical (A–Z)</option>
+                      <option value="age">Age (descending)</option>
+                      <option value="visibility">Show/hide (hidden first)</option>
+                    </select>
+                  </span>
                 </header>
                 <form id="add-person-form" class="add-row">
                   <input id="new-person-name" type="text" size="31" maxlength="40" placeholder="Name" aria-label="New person's name">
@@ -308,6 +342,18 @@
               <div class="dialog-actions">
                 <button id="cancel-delete-graph" type="button">Cancel</button>
                 <button id="confirm-delete-graph" type="submit">Delete</button>
+              </div>
+            </form>
+          </dialog>
+
+          <dialog class="graph-dialog" id="delete-person-dialog" aria-labelledby="delete-person-title" aria-describedby="delete-person-message">
+            <h2 id="delete-person-title">Delete person</h2>
+            <form id="delete-person-form" class="auth-form">
+              <div id="delete-person-message"></div>
+              <div id="delete-person-notice" class="notice" role="status" aria-live="polite"></div>
+              <div class="dialog-actions">
+                <button id="cancel-delete-person" type="button">Cancel</button>
+                <button type="submit">Delete</button>
               </div>
             </form>
           </dialog>
@@ -411,6 +457,10 @@
         graphSelect: document.getElementById("graph-select"),
         graphCreated: document.getElementById("graph-created"),
         peopleCount: document.getElementById("people-count"),
+        peopleCountLabel: document.getElementById("people-count-label"),
+        peopleFilterMenu: document.getElementById("people-filter-menu"),
+        peopleSortToggle: document.getElementById("people-sort-toggle"),
+        peopleSortSelect: document.getElementById("people-sort-select"),
         renameGraph: document.getElementById("rename-graph"),
         renameGraphDialog: document.getElementById("rename-graph-dialog"),
         renameGraphForm: document.getElementById("rename-graph-form"),
@@ -443,6 +493,11 @@
         deleteGraphNotice: document.getElementById("delete-graph-notice"),
         cancelDeleteGraph: document.getElementById("cancel-delete-graph"),
         confirmDeleteGraph: document.getElementById("confirm-delete-graph"),
+        deletePersonDialog: document.getElementById("delete-person-dialog"),
+        deletePersonForm: document.getElementById("delete-person-form"),
+        deletePersonMessage: document.getElementById("delete-person-message"),
+        deletePersonNotice: document.getElementById("delete-person-notice"),
+        cancelDeletePerson: document.getElementById("cancel-delete-person"),
         saveStatus: document.getElementById("save-status"),
         statusSpinner: document.getElementById("status-spinner"),
         statusMessage: document.getElementById("status-message"),
@@ -485,10 +540,13 @@
       let chartDrag = null;
       let hoveredPersonId = null;
       let selectedPersonId = null;
+      let foregroundPersonId = null;
+      let peopleFilter = "";
       let chartLabelHits = [];
       let creatingGraph = false;
       let deletingGraph = false;
       let deleteTargetId = null;
+      let deletePersonTarget = null;
       let renamingGraph = false;
       let traitsDraft = null;
       let savingTraits = false;
@@ -747,6 +805,8 @@
 
       const backgroundDropdown = setupDropdown(el.backgroundToggle, el.backgroundSelect);
       const graphDropdown = setupDropdown(el.graphToggle, el.graphSelect, true);
+      const peopleSortDropdown = setupDropdown(el.peopleSortToggle, el.peopleSortSelect, true, { alignRight: true });
+      peopleSortDropdown.sync();
       const newPersonDropdown = setupDropdown(el.newPersonRelationship.previousElementSibling, el.newPersonRelationship, true, { fixed: true, italicEmpty: true });
       newPersonDropdown.sync();
       let personDropdowns = [];
@@ -808,6 +868,7 @@
           value.people.every(person =>
             person && typeof person.id === "string" && typeof person.name === "string" &&
             (person.age === undefined || (Number.isSafeInteger(person.age) && person.age >= 0)) &&
+            (person.hidden === undefined || typeof person.hidden === "boolean") &&
             (person.relationship === undefined || Object.hasOwn(RELATIONSHIP_COLORS, person.relationship)) &&
             (person.color === undefined || /^#[0-9a-f]{6}$/i.test(person.color)) &&
             person.values && typeof person.values === "object"
@@ -915,6 +976,8 @@
       async function applySession(session) {
         const nextUser = session?.user ?? null;
         if (currentUser?.id === nextUser?.id && nextUser && !el.workspace.hidden) return;
+        closePeopleFilter();
+        if (el.deletePersonDialog.open) el.deletePersonDialog.close();
         currentUser = nextUser;
         if (!currentUser) {
           if (el.traitsDialog.open) el.traitsDialog.close();
@@ -974,6 +1037,7 @@
         el.graphCreated.textContent = `Created ${created.toLocaleDateString()}`;
         hoveredPersonId = null;
         selectedPersonId = null;
+        foregroundPersonId = null;
         el.chart.setAttribute("aria-label", "Scatter plot of people by selected traits. Select a person, then use arrow keys to adjust.");
         chartLabelHits = [];
         state = normalizeState(graph.data);
@@ -1151,14 +1215,13 @@
       }
 
       function renderPeople() {
-        const count = state.people.length;
-        el.peopleCount.textContent = `${count} ${count === 1 ? "person" : "people"}`;
+        updatePeopleFilter();
         const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
         const scrollTop = el.peopleList.scrollTop;
         personDropdowns.forEach(dropdown => dropdown.destroy());
         personDropdowns = [];
         el.peopleList.replaceChildren();
-        for (const [personIndex, person] of [...state.people.entries()].reverse()) {
+        for (const [personIndex, person] of sortedPeople()) {
           const card = document.createElement("details");
           card.className = "person-card";
           card.dataset.personId = person.id;
@@ -1182,6 +1245,7 @@
             person.name = nameInput.value;
             summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
             remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
+            updateVisibilityButton();
             color.setAttribute("aria-label", `Change color for ${person.name || "person"}`);
             relationship.setAttribute("aria-label", `Relationship for ${person.name || "person"}`);
             relationshipDropdown.sync();
@@ -1192,6 +1256,9 @@
             if (selectedPersonId === person.id) selectChartPerson(person);
             else drawChart();
             scheduleSave();
+          });
+          nameInput.addEventListener("change", () => {
+            if (el.peopleSortSelect.value === "name") setTimeout(sortPeopleCards, 0);
           });
           const relationship = el.newPersonRelationship.cloneNode(true);
           relationship.id = `person-relationship-${personIndex}`;
@@ -1213,7 +1280,16 @@
           relationship.addEventListener("change", () => {
             if (relationship.value) person.relationship = relationship.value;
             else delete person.relationship;
-            drawChart();
+            updatePeopleFilter();
+            if (!matchesPeopleFilter(person)) {
+              if (foregroundPersonId === person.id) foregroundPersonId = null;
+              if (hoveredPersonId === person.id) hoveredPersonId = null;
+              if (selectedPersonId === person.id) selectChartPerson(null);
+              else drawChart();
+              setTimeout(() => { if (state) renderPeople(); }, 0);
+            } else {
+              drawChart();
+            }
             scheduleSave();
           });
           const ageInput = document.createElement("input");
@@ -1237,17 +1313,46 @@
             drawChart();
             scheduleSave();
           });
+          ageInput.addEventListener("change", () => {
+            if (el.peopleSortSelect.value === "age") setTimeout(sortPeopleCards, 0);
+          });
+          const actions = document.createElement("span");
+          actions.className = "person-actions";
+          const visibility = document.createElement("button");
+          visibility.className = "person-visibility";
+          visibility.type = "button";
+          function updateVisibilityButton() {
+            visibility.setAttribute("aria-label", `Show ${person.name || "person"} on graph`);
+            visibility.setAttribute("aria-pressed", String(!person.hidden));
+            visibility.title = `${person.hidden ? "Show" : "Hide"} ${person.name || "person"} ${person.hidden ? "on" : "from"} graph`;
+          }
+          updateVisibilityButton();
+          visibility.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="currentColor"/><path class="visibility-slash" d="M2 14 14 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+          visibility.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (person.hidden) delete person.hidden;
+            else person.hidden = true;
+            updateVisibilityButton();
+            if (person.hidden && foregroundPersonId === person.id) foregroundPersonId = null;
+            if (person.hidden && hoveredPersonId === person.id) hoveredPersonId = null;
+            if (person.hidden && selectedPersonId === person.id) selectChartPerson(null);
+            else drawChart();
+            scheduleSave();
+            if (el.peopleSortSelect.value === "visibility") sortPeopleCards();
+          });
           const remove = document.createElement("button");
           remove.className = "icon-button person-remove";
           remove.type = "button";
           remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
           remove.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
           remove.addEventListener("click", event => {
+            event.preventDefault();
             event.stopPropagation();
-            if (selectedPersonId === person.id) selectChartPerson(null);
-            state.people = state.people.filter(item => item.id !== person.id);
-            render();
-            scheduleSave();
+            deletePersonTarget = { graphId: activeGraphId, personId: person.id };
+            el.deletePersonMessage.textContent = `Delete "${person.name.trim() || `Person ${personIndex + 1}`}"? This cannot be undone.`;
+            el.deletePersonNotice.classList.remove("visible");
+            el.deletePersonDialog.showModal();
           });
           for (const input of [nameInput, ageInput]) {
             input.addEventListener("click", event => event.stopPropagation());
@@ -1265,11 +1370,12 @@
             event.stopPropagation();
             openColorDialog(person, color);
           });
-          for (const control of [nameInput, relationshipWrapper, ageInput, color, remove]) {
+          for (const control of [nameInput, relationshipWrapper, ageInput, color, visibility, remove]) {
             control.addEventListener("keydown", event => event.stopPropagation());
           }
           summaryName.append(caret, nameInput, relationshipWrapper, ageInput, color);
-          summary.append(summaryName, remove);
+          actions.append(visibility, remove);
+          summary.append(summaryName, actions);
 
           const traitList = document.createElement("div");
           traitList.className = "trait-list";
@@ -1300,6 +1406,53 @@
           el.peopleList.append(card);
         }
         el.peopleList.scrollTop = scrollTop;
+      }
+
+      function sortedPeople() {
+        const people = [...state.people.entries()].reverse().filter(([, person]) => matchesPeopleFilter(person));
+        switch (el.peopleSortSelect.value) {
+          case "name":
+            people.sort(([, a], [, b]) => a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" }));
+            break;
+          case "age":
+            people.sort(([, a], [, b]) => (b.age ?? -1) - (a.age ?? -1));
+            break;
+          case "visibility":
+            people.sort(([, a], [, b]) => Number(Boolean(b.hidden)) - Number(Boolean(a.hidden)));
+            break;
+        }
+        return people;
+      }
+
+      function matchesPeopleFilter(person) {
+        return !peopleFilter || person.relationship === peopleFilter;
+      }
+
+      function updatePeopleFilter() {
+        el.peopleCountLabel.parentElement.dataset.size = `${"8".repeat(String(state.people.length).length)} people`;
+        el.peopleCount.classList.toggle("filtered", Boolean(peopleFilter));
+        for (const option of el.peopleFilterMenu.children) {
+          const filter = option.dataset.filter;
+          const count = filter
+            ? state.people.filter(person => person.relationship === filter).length
+            : state.people.length;
+          option.lastElementChild.textContent = count;
+          option.setAttribute("aria-checked", String(filter === peopleFilter));
+          if (filter === peopleFilter) el.peopleCount.setAttribute("aria-label", `Filter people: ${option.firstElementChild.textContent} (${count})`);
+        }
+      }
+
+      function sortPeopleCards() {
+        if (!state) return;
+        const cards = new Map([...el.peopleList.children].map(card => [card.dataset.personId, card]));
+        const focused = el.peopleList.contains(document.activeElement) ? document.activeElement : null;
+        let next = null;
+        for (const [, person] of sortedPeople().reverse()) {
+          const card = cards.get(person.id);
+          if (card && card.nextElementSibling !== next) el.peopleList.insertBefore(card, next);
+          if (card) next = card;
+        }
+        if (focused && document.activeElement !== focused) focused.focus({ preventScroll: true });
       }
 
       function renderDimensions() {
@@ -1371,7 +1524,7 @@
       }
 
       function chartPoint(person, bounds, range) {
-        if ((state.xTrait === AGE_AXIS || state.yTrait === AGE_AXIS) && person.age === undefined) return null;
+        if (!matchesPeopleFilter(person) || person.hidden || ((state.xTrait === AGE_AXIS || state.yTrait === AGE_AXIS) && person.age === undefined)) return null;
         const score = axis => {
           if (axis !== AGE_AXIS) return Number(person.values[axis] ?? 50) / 100;
           return range.min === range.max ? 0.5 : (person.age - range.min) / (range.max - range.min);
@@ -1440,7 +1593,9 @@
         const point = pointerPosition(event);
         const person = personAtPoint(point);
         const labelPerson = state?.people.find(item => item.id === labelAtPoint(point)?.personId);
-        selectChartPerson(person ?? labelPerson ?? null);
+        const selected = person ?? labelPerson ?? null;
+        if (selected) foregroundPersonId = selected.id;
+        selectChartPerson(selected);
         el.chart.focus({ preventScroll: true });
         if (state?.xTrait === AGE_AXIS && state?.yTrait === AGE_AXIS) return;
         if (!person) return;
@@ -1514,7 +1669,8 @@
       el.chart.addEventListener("pointercancel", endChartDrag);
       el.chart.addEventListener("lostpointercapture", endChartDrag);
       el.chart.addEventListener("keydown", event => {
-        if (event.key === "Escape" && selectedPersonId) {
+        if (event.key === "Escape" && (selectedPersonId || foregroundPersonId)) {
+          foregroundPersonId = null;
           selectChartPerson(null);
           event.preventDefault();
           return;
@@ -1597,7 +1753,7 @@
           person, index, point: chartPoint(person, { left, top, right, bottom }, range)
         })).filter(item => item.point);
         const count = plotted.length;
-        el.peopleCount.textContent = `${count} ${count === 1 ? "person" : "people"}`;
+        el.peopleCountLabel.textContent = `${count} ${count === 1 ? "person" : "people"}`;
         const labels = plotted.map(({ person, index, point }) => {
           const { x, y } = point;
           const text = person.name.trim() || `Person ${index + 1}`;
@@ -1618,6 +1774,7 @@
         });
         chartLabelHits = labels.map(label => label.hit);
         const hoveredIndex = plotted.findIndex(({ person }) => person.id === (hoveredPersonId ?? selectedPersonId));
+        const foregroundIndex = plotted.findIndex(({ person }) => person.id === foregroundPersonId);
         plotted.forEach(({ person, point }, index) => {
           const { x, y } = point;
           context.globalAlpha = hoveredIndex !== -1 && index !== hoveredIndex ? 0.4 : 1;
@@ -1646,8 +1803,9 @@
           context.fillText(text, labelX, labelY);
         };
         plotted.forEach((_, index) => {
-          if (index !== hoveredIndex) drawLabel(index);
+          if (index !== hoveredIndex && index !== foregroundIndex) drawLabel(index);
         });
+        if (foregroundIndex !== -1 && foregroundIndex !== hoveredIndex) drawLabel(foregroundIndex);
         if (hoveredIndex !== -1) {
           drawLabel(hoveredIndex, true);
           const { x, y } = plotted[hoveredIndex].point;
@@ -1886,6 +2044,25 @@
         }
       });
 
+      el.cancelDeletePerson.addEventListener("click", () => el.deletePersonDialog.close());
+      el.deletePersonDialog.addEventListener("close", () => { deletePersonTarget = null; });
+      el.deletePersonForm.addEventListener("submit", event => {
+        event.preventDefault();
+        if (!deletePersonTarget || !state || activeGraphId !== deletePersonTarget.graphId ||
+            !state.people.some(person => person.id === deletePersonTarget.personId)) {
+          showNotice(el.deletePersonNotice, "The selected person or graph changed. Close this dialog and try again.");
+          return;
+        }
+        const personId = deletePersonTarget.personId;
+        el.deletePersonDialog.close();
+        if (foregroundPersonId === personId) foregroundPersonId = null;
+        if (selectedPersonId === personId) selectChartPerson(null);
+        state.people = state.people.filter(person => person.id !== personId);
+        render();
+        scheduleSave();
+        el.peopleList.focus({ preventScroll: true });
+      });
+
       el.newPersonColor.addEventListener("click", () => openColorDialog(null, el.newPersonColor));
       el.colorWheel.addEventListener("pointerdown", event => {
         if (!event.isPrimary || event.button !== 0 || colorDragging) return;
@@ -2042,6 +2219,62 @@
         scheduleSave();
       });
 
+      el.peopleSortSelect.addEventListener("change", sortPeopleCards);
+
+      function closePeopleFilter(restoreFocus = false) {
+        if (el.peopleFilterMenu.hidden) return;
+        el.peopleFilterMenu.hidden = true;
+        el.peopleCount.setAttribute("aria-expanded", "false");
+        if (restoreFocus) el.peopleCount.focus();
+      }
+
+      el.peopleCount.addEventListener("click", () => {
+        if (!el.peopleFilterMenu.hidden) {
+          closePeopleFilter();
+          return;
+        }
+        el.peopleFilterMenu.hidden = false;
+        el.peopleCount.setAttribute("aria-expanded", "true");
+        el.peopleFilterMenu.querySelector('[aria-checked="true"]').focus();
+      });
+      el.peopleFilterMenu.addEventListener("keydown", event => {
+        const options = [...el.peopleFilterMenu.children];
+        const index = options.indexOf(document.activeElement);
+        let next;
+        if (event.key === "ArrowDown") next = (index + 1) % options.length;
+        else if (event.key === "ArrowUp") next = (index + options.length - 1) % options.length;
+        else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = options.length - 1;
+        else if (event.key === "Escape") {
+          event.preventDefault();
+          closePeopleFilter(true);
+          return;
+        } else return;
+        event.preventDefault();
+        options[next].focus();
+      });
+      el.peopleFilterMenu.addEventListener("focusout", event => {
+        if (!el.peopleCount.parentElement.contains(event.relatedTarget)) closePeopleFilter();
+      });
+      document.addEventListener("pointerdown", event => {
+        if (!el.peopleCount.parentElement.contains(event.target)) closePeopleFilter();
+      });
+      el.peopleFilterMenu.addEventListener("click", event => {
+        const option = event.target.closest("button[data-filter]");
+        if (!option) return;
+        peopleFilter = option.dataset.filter;
+        closePeopleFilter(true);
+        hoveredPersonId = null;
+        if (selectedPersonId && !state.people.some(person => person.id === selectedPersonId && matchesPeopleFilter(person))) {
+          selectChartPerson(null);
+        }
+        if (foregroundPersonId && !state.people.some(person => person.id === foregroundPersonId && matchesPeopleFilter(person))) {
+          foregroundPersonId = null;
+        }
+        renderPeople();
+        drawChart();
+      });
+
       el.newPersonAge.addEventListener("input", () => validateAgeInput(el.newPersonAge));
       el.addPersonForm.addEventListener("submit", event => {
         event.preventDefault();
@@ -2056,11 +2289,12 @@
           return;
         }
         const values = Object.fromEntries(state.traits.map(trait => [trait.id, 50]));
-        state.people.push({
+        const person = {
           id: makeId("person"), name, color: newPersonColor, values,
           ...(el.newPersonRelationship.value === "" ? {} : { relationship: el.newPersonRelationship.value }),
           ...(el.newPersonAge.value === "" ? {} : { age: el.newPersonAge.valueAsNumber })
-        });
+        };
+        state.people.push(person);
         el.newPersonName.value = "";
         el.newPersonRelationship.value = "";
         newPersonDropdown.sync();
@@ -2068,8 +2302,13 @@
         newPersonColor = randomPersonColor();
         el.newPersonColor.style.backgroundColor = newPersonColor;
         render();
-        el.peopleList.firstElementChild.open = true;
-        el.peopleList.scrollTop = 0;
+        const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
+        if (card) {
+          card.open = true;
+          el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
+        } else {
+          showNotice(el.appNotice, "Person added, but not shown by the current relationship filter.");
+        }
         scheduleSave();
         el.newPersonName.focus();
       });
