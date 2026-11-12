@@ -450,15 +450,12 @@
       };
       const COLORS = ["#145c92", "#c52d83", "#468949", "#dc7720", "#744aa0", "#009a9a", "#ba3a35", "#5555a4"];
       const DEFAULT_TRAITS = [
-        { id: "openness", name: "Openness", opposite: "Low openness" },
-        { id: "energy", name: "Energy", opposite: "Low energy" },
-        { id: "sociability", name: "Sociability", opposite: "Low sociability" },
-        { id: "closed-open", name: "Open", opposite: "Closed" },
+        { id: "openness", name: "Open", opposite: "Closed" },
+        { id: "sociability", name: "Extrovert", opposite: "Introvert" },
         { id: "benevolent-malevolent", name: "Malevolent", opposite: "Benevolent" },
         { id: "lame-cool", name: "Cool", opposite: "Lame" },
         { id: "masculine-feminine", name: "Feminine", opposite: "Masculine" },
         { id: "dumb-smart", name: "Smart", opposite: "Dumb" },
-        { id: "introvert-extrovert", name: "Extrovert", opposite: "Introvert" },
         { id: "secure-insecure", name: "Insecure", opposite: "Secure" },
         { id: "quiet-loud", name: "Loud", opposite: "Quiet" },
         { id: "authentic-performative", name: "Performative", opposite: "Authentic" },
@@ -609,7 +606,7 @@
           traits: DEFAULT_TRAITS.map(trait => ({ ...trait })),
           people: [],
           xTrait: "openness",
-          yTrait: "energy",
+          yTrait: "sociability",
           colorByRelationship: false,
           hideNames: false,
           hiddenRelationships: []
