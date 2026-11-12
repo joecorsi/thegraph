@@ -115,7 +115,9 @@
       #people-sort-toggle svg { position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%); }
       #people-sort-toggle .sort-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
       #people-sort-toggle .sort-size { visibility: hidden; }
-      .people-list { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+      .people-list-wrap { position: relative; min-width: 0; min-height: 0; }
+      .people-list { box-sizing: border-box; height: 100%; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+      .people-scroll-hint { position: absolute; right: 0; bottom: 0; padding: 3px 6px; border-radius: 2px; background: #efefef; color: #000; font: 12px Arial, sans-serif; pointer-events: none; }
       #add-person-form { flex-wrap: nowrap; min-width: 0; gap: .4rem; }
       #add-person-form button[type=submit] { width: var(--person-action-width); flex: none; }
       #new-person-name { flex: 1 1 auto; min-width: 0; max-width: 100%; box-sizing: border-box; }
@@ -322,7 +324,10 @@
                   <button class="person-color" id="new-person-color" type="button" aria-label="Choose color for new person"></button>
                   <button class="button" type="submit" aria-label="Add person">Add</button>
                 </form>
-                <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
+                <div class="people-list-wrap" id="people-list-wrap">
+                  <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
+                  <div class="people-scroll-hint" id="people-scroll-hint" hidden>Scroll for more &#8595;</div>
+                </div>
               </div>
               <div id="app-notice" class="notice" role="status" aria-live="polite"></div>
             </section>
@@ -548,6 +553,8 @@
         showNames: document.getElementById("show-names"),
         graphRelationships: document.querySelectorAll("[data-graph-relationship]"),
         peopleList: document.getElementById("people-list"),
+        peopleListWrap: document.getElementById("people-list-wrap"),
+        peopleScrollHint: document.getElementById("people-scroll-hint"),
         dimensions: document.getElementById("dimensions"),
         traitsDialog: document.getElementById("traits-dialog"),
         traitsNotice: document.getElementById("traits-notice"),
@@ -1292,10 +1299,20 @@
         }
       }
 
+      function updatePeopleScrollHint() {
+        el.peopleScrollHint.hidden = el.peopleList.clientHeight === 0 ||
+          el.peopleList.scrollHeight - el.peopleList.scrollTop - el.peopleList.clientHeight <= 1;
+      }
+
+      const peopleScrollObserver = new ResizeObserver(updatePeopleScrollHint);
+      el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
+
       function renderPeople() {
         updatePeopleFilter();
         const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
         const scrollTop = el.peopleList.scrollTop;
+        peopleScrollObserver.disconnect();
+        peopleScrollObserver.observe(el.peopleList);
         personDropdowns.forEach(dropdown => dropdown.destroy());
         personDropdowns = [];
         el.peopleList.replaceChildren();
@@ -1494,8 +1511,10 @@
           }
           card.append(summary, traitList);
           el.peopleList.append(card);
+          peopleScrollObserver.observe(card);
         }
         el.peopleList.scrollTop = scrollTop;
+        updatePeopleScrollHint();
       }
 
       function sortedPeople() {
@@ -2595,12 +2614,12 @@
 
       function alignPeopleList() {
         if (window.matchMedia("(max-width: 760px)").matches || el.workspace.hidden) {
-          el.peopleList.style.maxHeight = "";
+          el.peopleListWrap.style.maxHeight = "";
           return;
         }
         const chartBottom = el.chart.parentElement.getBoundingClientRect().bottom;
-        const listTop = el.peopleList.getBoundingClientRect().top;
-        el.peopleList.style.maxHeight = `${Math.max(0, chartBottom - listTop)}px`;
+        const listTop = el.peopleListWrap.getBoundingClientRect().top;
+        el.peopleListWrap.style.maxHeight = `${Math.max(0, chartBottom - listTop)}px`;
       }
 
       function alignGraphColumn() {
