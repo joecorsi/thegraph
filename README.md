@@ -12,8 +12,6 @@ The workspace stays within the viewport, with the add-person form above the scro
 
 The people list shows **Scroll for more** when there are entries or trait sliders below the visible area.
 
-Calendar icons in the graph header show the creation date (plus) and last-saved modification date (pencil); hover over them for labels.
-
 Expanded people show their added and last-modified dates. Existing people have unknown dates until edited; copying people to another graph preserves their dates. Person edits, including graph movements and visibility changes, update the modified date.
 
 Use the **Traits** button to add, rename, remove, or swap the ends of traits for the current graph, then choose **Save** or **Cancel**. Swapping ends leaves scores unchanged. Existing traits keep their scores and names as the high end; their low end is shown as "Low" until you name it.
