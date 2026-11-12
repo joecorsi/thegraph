@@ -6,7 +6,7 @@
     <title>The Pear</title>
     <style>
       html[data-background="rainbow"] { background: radial-gradient(ellipse at 25% 20%, #ffffffb3, transparent 38%), conic-gradient(from 225deg at 55% 50%, #ff8fcd, #ffc483, #f8ef8b, #91e9bd, #8fd8ff, #c0a3f6, #ff8fcd); background-attachment: fixed; }
-      body { isolation: isolate; }
+      body { isolation: isolate; margin: 18px 25px; }
       .rainbow-decor { display: none; position: fixed; inset: -16.6667vh -12.5vw; z-index: -1; overflow: hidden; pointer-events: none; }
       html[data-background="rainbow"] .rainbow-decor { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); place-items: center; }
       .rainbow-decor > span { --drift-x: 10px; --drift-y: -10px; font-size: 32px; opacity: .8; animation: rainbow-drift 16s ease-in-out infinite alternate; }
@@ -29,49 +29,55 @@
       [hidden], .notice { display: none; }
       .notice.visible { display: block; margin: 1em 0; }
       .notice:not(.notice-ok), .save-status.error { color: #a00; }
-      .page { max-width: 1100px; margin: 0 auto; padding-bottom: 4em; }
+      .page { max-width: 1080px; margin: 0 auto; padding-bottom: 4em; }
       html:has(#workspace:not([hidden])) { overflow: hidden; }
-      .page:has(#workspace:not([hidden])) { display: flex; flex-direction: column; height: calc(100dvh - 16px); padding-bottom: 0; }
+      .page:has(#workspace:not([hidden])) { display: flex; flex-direction: column; height: calc(100dvh - 36px); padding-bottom: 0; }
       .page:has(#workspace:not([hidden])) .content { display: flex; flex: 1; min-height: 0; }
       #workspace:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
-      .background-selector { position: fixed; right: 1em; bottom: 1em; z-index: 1; }
+      .background-selector { position: fixed; right: calc(1em + 25px); bottom: calc(1em + 10px); z-index: 1; }
       .background-toggle { display: block; margin-left: auto; }
       .background-toggle::after { content: " ▴"; }
-      #background-select, #graph-select, .axis-end select { position: absolute; z-index: 2; min-width: 100%; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; outline: none; color: #000; background: #fff; }
-      #background-select { right: 0; bottom: calc(100% + .25em); max-height: calc(100dvh - 5em); }
-      #graph-select { left: 0; top: calc(100% + .25em); }
-      #background-select option, #graph-select option, .axis-end option { padding: 1px 4px; }
+      #background-select, #graph-select, .axis-end select, .person-relationship select { position: absolute; z-index: 2; min-width: 100%; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; outline: none; color: #000; background: #fff; }
+      #background-select { right: 0; bottom: 100%; max-height: calc(100dvh - 5em); }
+      #graph-select { left: 0; top: 100%; }
+      #background-select option, #graph-select option, .axis-end option, .person-relationship option { padding: 1px 4px; }
       .dropdown-highlight { position: absolute; z-index: 3; overflow: hidden; color: #fff; background: #00f; pointer-events: none; }
       .dropdown-highlight span { position: absolute; box-sizing: border-box; padding: 1px 4px; overflow: hidden; white-space: nowrap; }
       .dropdown-hover { z-index: 4; }
       .background-error { max-width: 20em; color: #a00; }
       .masthead, .account-bar:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; }
       .masthead { justify-content: space-between; }
+      .account-bar:not([hidden]) { justify-content: flex-end; min-width: 0; }
+      .account-email { min-width: 0; overflow-wrap: anywhere; }
       .auth-form { display: grid; gap: .5em; max-width: 30em; margin: 1em 0; }
       .auth-actions, .add-row, .dimension-row, .people-heading, .chart-heading {
         display: flex; flex-wrap: wrap; align-items: center; gap: .5em;
       }
       .setup-details { margin: 1em 0; }
-      .save-status { position: fixed; left: 1em; bottom: 1em; z-index: 1; margin: 0; color: #000; background: #fff; }
-      .layout { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr) min(32%, 17.5rem); grid-template-rows: minmax(0, 1fr); gap: 1em 2.75em; }
+      .layout { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, min(calc(100% - min(40%, 21rem) - 1em), var(--chart-available-width, 100%))) min(40%, 21rem); grid-template-rows: minmax(0, 1fr); gap: 1em; }
       .graph-select { position: relative; flex: 1 1 90px; min-width: 90px; }
-      .graph-badge { border: 1px solid #767676; border-radius: 2px; padding: 2px 6px; background: #efefef; color: #000; font: 13.3333px Arial, sans-serif; white-space: nowrap; }
-      .graph-toggle, .axis-toggle { position: relative; display: flex; width: 100%; padding-right: 24px; text-align: left; }
-      .graph-toggle span, .axis-toggle span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-      .graph-toggle::after, .axis-toggle::after { content: "▾"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+      #new-graph { margin-left: auto; }
+      .graph-badge { border-radius: 2px; padding: 3px 7px; background: #efefef; color: #000; font: 13.3333px Arial, sans-serif; white-space: nowrap; }
+      .save-status { flex: none; align-self: center; box-sizing: border-box; max-width: 100%; margin-top: .5em; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+      .status-spinner:not([hidden]) { display: inline-block; width: 1ch; margin-right: .5em; font-family: monospace; font-weight: bold; animation: status-spin .8s steps(8) infinite; }
+      @keyframes status-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .status-spinner:not([hidden]) { animation: none; } }
+      .graph-toggle, .axis-toggle, .relationship-toggle { position: relative; display: flex; width: 100%; padding-right: 24px; text-align: left; }
+      .graph-toggle span, .axis-toggle span, .relationship-toggle span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .graph-toggle::after, .axis-toggle::after, .relationship-toggle::after { content: "▾"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
       .panel { min-width: 0; }
       .graph-panel, .people-panel { display: flex; flex-direction: column; min-height: 0; }
       .chart-space { flex: 1; min-height: 0; container-type: size; }
-      .chart-body { width: min(100%, (100cqh - 2em - 2px) * 620 / 445); }
+      .chart-body { width: min(100%, 100cqh - var(--chart-footer-space, 2em)); }
       .chart-frame { --plot-inset: 20px; position: relative; box-sizing: border-box; border: 1px solid rgba(0, 0, 0, .15); border-radius: 8px; }
-      #chart { display: block; width: 100%; aspect-ratio: 620 / 445; border-radius: inherit; touch-action: none; }
-      .chart-hint { position: absolute; left: 8px; bottom: 6px; max-width: calc(50% - 16px); margin: 0; color: #000; font-size: .85em; pointer-events: none; }
+      #chart { display: block; width: 100%; aspect-ratio: 1; border-radius: inherit; touch-action: none; }
+      .chart-hint { position: absolute; left: 8px; top: 6px; max-width: calc(50% - 16px); margin: 0; color: #000; font-size: .85em; pointer-events: none; }
       .axis-end { position: absolute; max-width: calc(50% - var(--plot-inset) - 12px); color: #000; }
       .axis-end:focus-within { z-index: 3; }
       .axis-toggle { appearance: none; border: 0; padding: 3px 26px 3px 8px; background: transparent; color: inherit; cursor: pointer; font: 13.333px Arial, sans-serif; }
       .axis-toggle:focus-visible { outline: 2px solid; outline-offset: 1px; }
       .axis-toggle::after { content: ""; right: 10px; width: 6px; height: 6px; border-right: 1px solid; border-bottom: 1px solid; transform: translateY(-65%) rotate(45deg); pointer-events: none; }
-      .axis-end select { top: calc(100% + .25em); left: 0; }
+      .axis-end select { top: 100%; left: 0; }
       .axis-x-low, .axis-x-high { top: 50%; transform: translateY(calc(-100% - 3px)); }
       .axis-x-low { left: var(--plot-inset); }
       .axis-x-high { right: var(--plot-inset); }
@@ -82,24 +88,41 @@
       .axis-y-low, .axis-y-high { left: calc(50% + 2px); }
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
-      .people-content { --person-action-width: 6.25rem; display: grid; flex: 1; grid-template-rows: auto minmax(0, 1fr); width: fit-content; max-width: 100%; min-height: 0; }
+      .people-content { --person-action-width: 3.5rem; display: grid; flex: 1; grid-template-rows: auto auto minmax(0, 1fr); width: fit-content; max-width: 100%; min-height: 0; }
+      #people-count { margin-left: auto; }
       .people-list { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
       #add-person-form { flex-wrap: nowrap; min-width: 0; gap: .4rem; }
-      #add-person-form button[type=submit] { width: var(--person-action-width); flex: none; margin-left: .1rem; }
+      #add-person-form button[type=submit] { width: var(--person-action-width); flex: none; }
       #new-person-name { flex: 1 1 auto; min-width: 0; max-width: 100%; box-sizing: border-box; }
       .person-card { margin: .75em 0; }
-      .person-summary { display: grid; grid-template-columns: minmax(0, 1fr) var(--person-action-width); align-items: center; gap: .5em; cursor: pointer; list-style: none; }
+      .person-summary { display: grid; grid-template-columns: minmax(0, 1fr) var(--person-action-width); align-items: center; gap: .4rem; cursor: pointer; list-style: none; }
       .person-summary::-webkit-details-marker { display: none; }
       .summary-name { display: flex; align-items: center; gap: .4rem; min-width: 0; }
-      .person-caret { border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 6px solid; }
-      .person-card[open] .person-caret { transform: rotate(90deg); }
+      .person-caret { position: relative; flex: none; width: 10px; height: 10px; }
+      .person-caret::before { content: ""; position: absolute; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 6px solid; transform-origin: top left; }
+      .person-card[open] .person-caret::before { transform: translate(10px, 2px) rotate(90deg); }
       .person-name { flex: 1; min-width: 0; }
+      .person-relationship { position: relative; flex: none; width: calc(5.75rem - 25px); min-width: 0; }
+      .relationship-toggle { box-sizing: border-box; padding-left: 2px; padding-right: 11px; }
+      .relationship-toggle::after { right: 1px; }
+      .relationship-toggle.unclassified span, .person-relationship option[value=""] { font-style: italic; }
+      .person-relationship select { position: fixed; z-index: 20; min-width: 0; }
+      .person-relationship .dropdown-highlight { position: fixed; z-index: 21; }
+      .person-relationship .dropdown-hover { z-index: 22; }
+      .person-age { appearance: textfield; flex: none; width: calc(3.5rem - 20px); min-width: 0; box-sizing: border-box; text-align: center; }
+      .person-age::-webkit-inner-spin-button, .person-age::-webkit-outer-spin-button { appearance: none; margin: 0; }
       .person-summary button { justify-self: start; }
+      .person-summary > button { width: var(--person-action-width); }
+      .person-remove svg, #delete-graph svg { display: block; width: 12px; height: 12px; margin: auto; }
+      #delete-graph { position: relative; }
+      #delete-graph span { visibility: hidden; }
+      #delete-graph svg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
       .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
-      .chart-heading h2, .people-heading h2 { font-size: 1.25em; }
-      .chart-footer { display: flex; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
-      .privacy-note { margin: 0; text-align: right; font-size: .85em; }
-      .trait-list { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) minmax(0, max-content); column-gap: .5em; margin: .5em 0 0 calc(6px + .4em); }
+      .chart-heading h2, .people-heading h2 { font-size: 1.25em; font-weight: normal; }
+      .chart-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
+      .relationship-colors { display: flex; align-items: center; font-size: .85em; white-space: nowrap; }
+      .privacy-note { margin: 0 0 0 auto; text-align: right; font-size: .85em; }
+      .trait-list { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) minmax(0, max-content); column-gap: .5em; margin: .5em 0 0 calc(10px + .4rem); }
       .trait-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
       .trait-row input { width: 100%; min-width: 0; margin: 0; }
       .trait-row span { overflow-wrap: anywhere; }
@@ -123,8 +146,16 @@
       #color-title { padding-right: calc(52px + 1em); }
       .color-preview { position: absolute; top: 1em; right: 1em; width: 52px; height: 52px; border-radius: 50%; }
       .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-      @media (max-width: 760px) { .layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); } }
-      @media (max-width: 500px) { .save-status { bottom: 4em; max-width: calc(100% - 2em); } }
+      @media (max-width: 760px) {
+        .layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
+      }
+      @media (max-width: 500px) {
+        .people-content { --person-action-width: 2.5rem; }
+        #add-person-form, .summary-name { flex-wrap: wrap; }
+        #new-person-name, .person-name { min-width: 4rem; }
+        .person-relationship { width: calc(4.75rem - 25px); }
+        .relationship-toggle span { font-size: 11px; }
+      }
     </style>
   </head>
   <body>
@@ -172,12 +203,6 @@
         </section>
 
         <section id="workspace" hidden>
-          <div class="intro">
-            <p class="muted">Add people and their traits. Only you can see your graphs.</p>
-          </div>
-
-          <div class="save-status" id="save-status" role="status" aria-live="polite"></div>
-
           <div class="layout">
             <section class="panel graph-panel" aria-labelledby="chart-title">
               <header class="panel-heading chart-heading">
@@ -188,13 +213,13 @@
                 </span>
                 <time class="graph-badge" id="graph-created"></time>
                 <button class="button" id="rename-graph" type="button">Rename</button>
-                <button class="button button-danger" id="delete-graph" type="button">Delete</button>
-                <button class="button" id="new-graph" type="button">+ New graph</button>
+                <button class="button button-danger" id="delete-graph" type="button" aria-label="Delete graph"><span aria-hidden="true">Delete</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                <button class="button" id="new-graph" type="button">New graph</button>
               </header>
               <div class="chart-space">
                 <div class="chart-body">
                   <div class="chart-frame">
-                    <canvas id="chart" role="img" aria-label="Scatter plot of people by selected traits">
+                    <canvas id="chart" role="img" tabindex="0" aria-label="Scatter plot of people by selected traits. Select a person, then use arrow keys to adjust.">
                       Scatter plot of people by selected traits.
                     </canvas>
                     <span class="axis-end axis-x-low"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="x-axis-low"><span></span></button><select id="x-axis-low" aria-label="Horizontal axis trait, left end" size="9" hidden></select></span>
@@ -204,29 +229,42 @@
                     <p class="chart-hint">Drag a person to adjust</p>
                   </div>
                   <div class="chart-footer">
-                    <span class="graph-badge" id="people-count"></span>
-                    <p class="privacy-note">Your graphs stay private to your account</p>
+                    <label class="relationship-colors"><input type="checkbox" id="relationship-colors"> Color by relationship</label>
+                    <p class="privacy-note">Your graphs are private to your account</p>
                   </div>
                 </div>
               </div>
             </section>
 
             <section class="panel people-panel" aria-labelledby="people-title">
-              <header class="panel-heading people-heading">
-                <h2 id="people-title">People</h2>
-                <button id="open-traits" type="button">Traits</button>
-              </header>
               <div class="people-content">
+                <header class="panel-heading people-heading">
+                  <h2 id="people-title">People</h2>
+                  <button id="open-traits" type="button">Traits</button>
+                  <span class="graph-badge" id="people-count"></span>
+                </header>
                 <form id="add-person-form" class="add-row">
                   <input id="new-person-name" type="text" size="31" maxlength="40" placeholder="Name" aria-label="New person's name">
+                  <span class="person-relationship">
+                    <button class="relationship-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="new-person-relationship"><span>None</span></button>
+                    <select id="new-person-relationship" aria-label="New person's relationship" size="4" hidden>
+                      <option value="" selected>None</option>
+                      <option value="friend">Friend</option>
+                      <option value="enemy">Enemy</option>
+                      <option value="lover">Lover</option>
+                    </select>
+                  </span>
+                  <input class="person-age" id="new-person-age" type="number" min="0" step="1" placeholder="Age" aria-label="New person's age">
                   <button class="person-color" id="new-person-color" type="button" aria-label="Choose color for new person"></button>
-                  <button class="button" type="submit">+ New person</button>
+                  <button class="button" type="submit" aria-label="Add person">Add</button>
                 </form>
                 <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
               </div>
               <div id="app-notice" class="notice" role="status" aria-live="polite"></div>
             </section>
           </div>
+
+          <div class="graph-badge save-status" id="save-status" role="status" aria-live="polite"><span class="status-spinner" id="status-spinner" aria-hidden="true" hidden>|</span><span id="status-message"></span></div>
 
           <dialog class="graph-dialog" id="rename-graph-dialog" aria-labelledby="rename-graph-title">
             <h2 id="rename-graph-title">Rename graph</h2>
@@ -327,6 +365,9 @@
     <script>
       const CONFIG_KEY = "people-map-supabase-config";
       const BACKGROUND_KEY = "the-pear-background";
+      const AGE_AXIS = "__person_age__";
+      const RELATIONSHIP_COLORS = { friend: "#009b4f", enemy: "#382110", lover: "#f25416" };
+      const UNCLASSIFIED_COLOR = "#d3d3d3";
       const DEFAULT_CONFIG = {
         url: "https://auhvnhytuxhhzdsjiugt.supabase.co",
         key: "sb_publishable_vsbBzlNtb1Aa0z6sAGG8WA_43xh9JQ_"
@@ -394,9 +435,13 @@
         cancelDeleteGraph: document.getElementById("cancel-delete-graph"),
         confirmDeleteGraph: document.getElementById("confirm-delete-graph"),
         saveStatus: document.getElementById("save-status"),
+        statusSpinner: document.getElementById("status-spinner"),
+        statusMessage: document.getElementById("status-message"),
         xAxes: [document.getElementById("x-axis-low"), document.getElementById("x-axis-high")],
         yAxes: [document.getElementById("y-axis-low"), document.getElementById("y-axis-high")],
         chart: document.getElementById("chart"),
+        chartHint: document.querySelector(".chart-hint"),
+        relationshipColors: document.getElementById("relationship-colors"),
         peopleList: document.getElementById("people-list"),
         dimensions: document.getElementById("dimensions"),
         traitsDialog: document.getElementById("traits-dialog"),
@@ -407,6 +452,8 @@
         appNotice: document.getElementById("app-notice"),
         addPersonForm: document.getElementById("add-person-form"),
         newPersonName: document.getElementById("new-person-name"),
+        newPersonRelationship: document.getElementById("new-person-relationship"),
+        newPersonAge: document.getElementById("new-person-age"),
         newPersonColor: document.getElementById("new-person-color"),
         addTraitForm: document.getElementById("add-trait-form"),
         newTraitLow: document.getElementById("new-trait-low"),
@@ -428,6 +475,7 @@
       let appNoticeTimer = null;
       let chartDrag = null;
       let hoveredPersonId = null;
+      let selectedPersonId = null;
       let chartLabelHits = [];
       let creatingGraph = false;
       let deletingGraph = false;
@@ -451,7 +499,8 @@
           traits: DEFAULT_TRAITS.map(trait => ({ ...trait })),
           people: [],
           xTrait: "openness",
-          yTrait: "energy"
+          yTrait: "energy",
+          colorByRelationship: false
         };
       }
 
@@ -540,8 +589,8 @@
             return;
           }
           const parent = select.parentElement.getBoundingClientRect();
-          highlight.style.left = `${clippedLeft - parent.left}px`;
-          highlight.style.top = `${clippedTop - parent.top}px`;
+          highlight.style.left = `${clippedLeft - (options.fixed ? 0 : parent.left)}px`;
+          highlight.style.top = `${clippedTop - (options.fixed ? 0 : parent.top)}px`;
           highlight.style.width = `${clippedRight - clippedLeft}px`;
           highlight.style.height = `${clippedBottom - clippedTop}px`;
           const text = highlight.firstElementChild;
@@ -572,6 +621,7 @@
         function sync() {
           const label = options.label ? options.label() : select.selectedOptions[0]?.textContent || "Choose a graph";
           (toggle.querySelector("span") || toggle).textContent = label;
+          if (options.italicEmpty) toggle.classList.toggle("unclassified", select.value === "");
           toggle.setAttribute("aria-label", `${select.getAttribute("aria-label")}: ${label}`);
           toggle.disabled = select.disabled || !select.options.length;
         }
@@ -604,11 +654,22 @@
             const bounds = toggle.getBoundingClientRect();
             select.size = Math.min(9, Math.max(2, select.options.length));
             select.style.height = "";
-            select.style.maxHeight = options.autoDirection ? "" : `${Math.max(0, window.innerHeight - bounds.bottom - 20)}px`;
+            select.style.maxHeight = options.autoDirection || options.fixed ? "" : `${Math.max(0, window.innerHeight - bounds.bottom - 20)}px`;
             const availableWidth = options.alignRight ? bounds.right - 16 : window.innerWidth - bounds.left - 16;
             select.style.maxWidth = `${Math.max(bounds.width, availableWidth)}px`;
           }
           select.hidden = false;
+          if (options.fixed) {
+            const bounds = toggle.getBoundingClientRect();
+            select.style.left = `${bounds.left}px`;
+            select.style.minWidth = `${bounds.width}px`;
+            const below = Math.max(0, window.innerHeight - bounds.bottom - 20);
+            const above = Math.max(0, bounds.top - 20);
+            const opensUp = select.getBoundingClientRect().height > below && above > below;
+            select.style.top = opensUp ? "auto" : `${bounds.bottom}px`;
+            select.style.bottom = opensUp ? `${window.innerHeight - bounds.top}px` : "auto";
+            select.style.maxHeight = `${opensUp ? above : below}px`;
+          }
           if (deferChange && select.options.length === 1) {
             const style = getComputedStyle(select);
             const borderAndPadding = ["borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"]
@@ -619,9 +680,9 @@
             const bounds = toggle.getBoundingClientRect();
             const below = Math.max(0, window.innerHeight - bounds.bottom - 20);
             const above = Math.max(0, bounds.top - 20);
-            const opensUp = select.getBoundingClientRect().height + 4 > below && above > below;
-            select.style.top = opensUp ? "auto" : "calc(100% + .25em)";
-            select.style.bottom = opensUp ? "calc(100% + .25em)" : "auto";
+            const opensUp = select.getBoundingClientRect().height > below && above > below;
+            select.style.top = opensUp ? "auto" : "100%";
+            select.style.bottom = opensUp ? "100%" : "auto";
             select.style.maxHeight = `${opensUp ? above : below}px`;
           }
           toggle.setAttribute("aria-expanded", "true");
@@ -632,7 +693,10 @@
           updateHighlights();
           if (deferChange && !committing && !select.hidden) event.stopImmediatePropagation();
         });
-        select.addEventListener("click", () => close(true, true));
+        select.addEventListener("click", event => {
+          if (options.fixed) event.preventDefault();
+          close(true, true);
+        });
         select.addEventListener("pointermove", event => {
           pointer = { x: event.clientX, y: event.clientY };
           updateHighlights();
@@ -653,14 +717,30 @@
         select.addEventListener("focusout", event => {
           if (!select.parentElement.contains(event.relatedTarget)) close();
         });
-        document.addEventListener("pointerdown", event => {
+        const closeOnOutsidePointer = event => {
           if (!select.hidden && !toggle.parentElement.contains(event.target)) close();
-        });
-        return { sync };
+        };
+        const closeOnScroll = event => {
+          if (event.target !== select) close();
+        };
+        document.addEventListener("pointerdown", closeOnOutsidePointer);
+        if (options.fixed) document.addEventListener("scroll", closeOnScroll, true);
+        if (options.fixed) window.addEventListener("resize", closeOnScroll);
+        return {
+          sync,
+          destroy() {
+            document.removeEventListener("pointerdown", closeOnOutsidePointer);
+            if (options.fixed) document.removeEventListener("scroll", closeOnScroll, true);
+            if (options.fixed) window.removeEventListener("resize", closeOnScroll);
+          }
+        };
       }
 
       const backgroundDropdown = setupDropdown(el.backgroundToggle, el.backgroundSelect);
       const graphDropdown = setupDropdown(el.graphToggle, el.graphSelect, true);
+      const newPersonDropdown = setupDropdown(el.newPersonRelationship.previousElementSibling, el.newPersonRelationship, true, { fixed: true, italicEmpty: true });
+      newPersonDropdown.sync();
+      let personDropdowns = [];
       const axisDropdowns = new Map();
       for (const controls of [el.xAxes, el.yAxes]) {
         controls.forEach((select, index) => {
@@ -668,6 +748,10 @@
             autoDirection: true,
             alignRight: select.id === "x-axis-high",
             label: () => {
+              if (select.value === AGE_AXIS) {
+                const range = ageRange();
+                return range ? `Age: ${index === 0 ? range.min : range.max}` : "Age (no ages)";
+              }
               const trait = state?.traits.find(item => item.id === select.value);
               return trait ? (index === 0 ? trait.opposite || "Low" : trait.name) : "No traits";
             }
@@ -699,14 +783,23 @@
         return `${prefix}-${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
       }
 
+      function validateAgeInput(input) {
+        input.setCustomValidity(input.value !== "" && !Number.isSafeInteger(input.valueAsNumber)
+          ? "Enter a whole number for age." : "");
+        return input.checkValidity();
+      }
+
       function isValidState(value) {
         return value &&
           Array.isArray(value.traits) &&
           value.traits.every(trait => trait && typeof trait.id === "string" && typeof trait.name === "string" &&
             (trait.opposite === undefined || typeof trait.opposite === "string")) &&
           Array.isArray(value.people) &&
+          (value.colorByRelationship === undefined || typeof value.colorByRelationship === "boolean") &&
           value.people.every(person =>
             person && typeof person.id === "string" && typeof person.name === "string" &&
+            (person.age === undefined || (Number.isSafeInteger(person.age) && person.age >= 0)) &&
+            (person.relationship === undefined || Object.hasOwn(RELATIONSHIP_COLORS, person.relationship)) &&
             (person.color === undefined || /^#[0-9a-f]{6}$/i.test(person.color)) &&
             person.values && typeof person.values === "object"
           );
@@ -729,8 +822,9 @@
         return {
           traits,
           people,
-          xTrait: traitIds.has(value.xTrait) ? value.xTrait : traits[0]?.id,
-          yTrait: traitIds.has(value.yTrait) ? value.yTrait : (traits[1]?.id ?? traits[0]?.id)
+          xTrait: value.xTrait === AGE_AXIS || traitIds.has(value.xTrait) ? value.xTrait : traits[0]?.id,
+          yTrait: value.yTrait === AGE_AXIS || traitIds.has(value.yTrait) ? value.yTrait : (traits[1]?.id ?? traits[0]?.id),
+          colorByRelationship: value.colorByRelationship ?? false
         };
       }
 
@@ -752,9 +846,10 @@
         showNotice(el.workspace.hidden ? el.authNotice : el.appNotice, error.message);
       }
 
-      function setSaveStatus(message, isError = false) {
-        el.saveStatus.textContent = message;
+      function setSaveStatus(message, { isError = false, inProgress = false } = {}) {
+        el.statusMessage.textContent = message;
         el.saveStatus.classList.toggle("error", isError);
+        el.statusSpinner.hidden = !inProgress;
       }
 
       function getRedirectUrl() {
@@ -846,7 +941,7 @@
       }
 
       async function loadGraphs() {
-        setSaveStatus("Loading your graphs...");
+        setSaveStatus("Loading your graphs...", { inProgress: true });
         const { data, error } = await client
           .from("graphs")
           .select("id, user_id, name, data, created_at, updated_at")
@@ -869,6 +964,8 @@
         el.graphCreated.dateTime = graph.created_at;
         el.graphCreated.textContent = `Created ${created.toLocaleDateString()}`;
         hoveredPersonId = null;
+        selectedPersonId = null;
+        el.chart.setAttribute("aria-label", "Scatter plot of people by selected traits. Select a person, then use arrow keys to adjust.");
         chartLabelHits = [];
         state = normalizeState(graph.data);
         renderGraphList();
@@ -913,7 +1010,7 @@
         const index = graphs.findIndex(graph => graph.id === data.id);
         if (index >= 0) graphs[index] = data;
         if (activeGraphId === snapshot.id && snapshot.version === saveVersion) {
-          setSaveStatus("Saved to your account.");
+          setSaveStatus("Saved to your account");
           renderGraphList();
         }
       }
@@ -934,14 +1031,16 @@
           data: JSON.parse(JSON.stringify(state)),
           version: saveVersion
         };
-        setSaveStatus("Saving...");
+        setSaveStatus("Saving...", { inProgress: true });
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
           const snapshot = pendingSave;
           pendingSave = null;
           saveTimer = null;
           void enqueueSave(snapshot).catch(error => {
-            if (activeGraphId === snapshot.id) setSaveStatus(`Save failed: ${error.message}`, true);
+            if (activeGraphId === snapshot.id && snapshot.version === saveVersion) {
+              setSaveStatus(`Save failed: ${error.message}`, { isError: true });
+            }
             showNotice(el.appNotice, `Couldn't save this graph: ${error.message}`);
           });
         }, 500);
@@ -1027,14 +1126,16 @@
       }
 
       function renderAxes() {
-        state.xTrait = state.traits.some(trait => trait.id === state.xTrait) ? state.xTrait : state.traits[0]?.id;
-        state.yTrait = state.traits.some(trait => trait.id === state.yTrait) ? state.yTrait : state.traits[1]?.id ?? state.traits[0]?.id;
+        state.xTrait = state.xTrait === AGE_AXIS || state.traits.some(trait => trait.id === state.xTrait) ? state.xTrait : state.traits[0]?.id;
+        state.yTrait = state.yTrait === AGE_AXIS || state.traits.some(trait => trait.id === state.yTrait) ? state.yTrait : state.traits[1]?.id ?? state.traits[0]?.id;
+        el.chartHint.textContent = state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS
+          ? "Double-click a person to find them" : "Drag a person to adjust";
         for (const [controls, selected] of [[el.xAxes, state.xTrait], [el.yAxes, state.yTrait]]) {
-          const trait = state.traits.find(item => item.id === selected);
           controls.forEach(select => {
-            select.replaceChildren(...state.traits.map(item => createOption(item, selected)));
+            const age = new Option("Age", AGE_AXIS, false, selected === AGE_AXIS);
+            select.replaceChildren(...state.traits.map(item => createOption(item, selected)), age);
             select.value = selected ?? "";
-            select.disabled = !trait;
+            select.disabled = false;
             axisDropdowns.get(select).sync();
           });
         }
@@ -1045,6 +1146,8 @@
         el.peopleCount.textContent = `${count} ${count === 1 ? "person" : "people"}`;
         const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
         const scrollTop = el.peopleList.scrollTop;
+        personDropdowns.forEach(dropdown => dropdown.destroy());
+        personDropdowns = [];
         el.peopleList.replaceChildren();
         for (const [personIndex, person] of [...state.people.entries()].reverse()) {
           const card = document.createElement("details");
@@ -1071,25 +1174,79 @@
             summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
             remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
             color.setAttribute("aria-label", `Change color for ${person.name || "person"}`);
+            relationship.setAttribute("aria-label", `Relationship for ${person.name || "person"}`);
+            relationshipDropdown.sync();
             for (const slider of card.querySelectorAll("input[type=range]")) {
               const trait = state.traits.find(item => item.id === slider.dataset.traitId);
               slider.setAttribute("aria-label", `${traitLabel(trait)} score for ${person.name || "person"}`);
+            }
+            if (selectedPersonId === person.id) selectChartPerson(person);
+            else drawChart();
+            scheduleSave();
+          });
+          const relationship = el.newPersonRelationship.cloneNode(true);
+          relationship.id = `person-relationship-${personIndex}`;
+          relationship.value = person.relationship ?? "";
+          relationship.setAttribute("aria-label", `Relationship for ${person.name || "person"}`);
+          const relationshipWrapper = document.createElement("span");
+          relationshipWrapper.className = "person-relationship";
+          const relationshipToggle = document.createElement("button");
+          relationshipToggle.className = "relationship-toggle";
+          relationshipToggle.type = "button";
+          relationshipToggle.setAttribute("aria-haspopup", "listbox");
+          relationshipToggle.setAttribute("aria-expanded", "false");
+          relationshipToggle.setAttribute("aria-controls", relationship.id);
+          relationshipToggle.append(document.createElement("span"));
+          relationshipWrapper.append(relationshipToggle, relationship);
+          const relationshipDropdown = setupDropdown(relationshipToggle, relationship, true, { fixed: true, italicEmpty: true });
+          relationshipDropdown.sync();
+          personDropdowns.push(relationshipDropdown);
+          relationship.addEventListener("change", () => {
+            if (relationship.value) person.relationship = relationship.value;
+            else delete person.relationship;
+            drawChart();
+            scheduleSave();
+          });
+          const ageInput = document.createElement("input");
+          ageInput.className = "person-age";
+          ageInput.type = "number";
+          ageInput.min = "0";
+          ageInput.step = "1";
+          ageInput.placeholder = "Age";
+          ageInput.value = person.age === undefined ? "" : String(person.age);
+          ageInput.setAttribute("aria-label", `Age for person ${personIndex + 1}`);
+          ageInput.addEventListener("input", () => {
+            if (!validateAgeInput(ageInput)) {
+              ageInput.reportValidity();
+              return;
+            }
+            if (ageInput.value === "") delete person.age;
+            else person.age = ageInput.valueAsNumber;
+            for (const select of [...el.xAxes, ...el.yAxes]) {
+              if (select.value === AGE_AXIS) axisDropdowns.get(select).sync();
             }
             drawChart();
             scheduleSave();
           });
           const remove = document.createElement("button");
-          remove.className = "icon-button";
+          remove.className = "icon-button person-remove";
           remove.type = "button";
           remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
-          remove.textContent = "Delete";
+          remove.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
           remove.addEventListener("click", event => {
             event.stopPropagation();
+            if (selectedPersonId === person.id) selectChartPerson(null);
             state.people = state.people.filter(item => item.id !== person.id);
             render();
             scheduleSave();
           });
-          nameInput.addEventListener("click", event => event.stopPropagation());
+          for (const input of [nameInput, ageInput]) {
+            input.addEventListener("click", event => event.stopPropagation());
+          }
+          relationshipWrapper.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+          });
           const color = document.createElement("button");
           color.className = "person-color";
           color.type = "button";
@@ -1099,10 +1256,10 @@
             event.stopPropagation();
             openColorDialog(person, color);
           });
-          for (const control of [nameInput, color, remove]) {
+          for (const control of [nameInput, relationshipWrapper, ageInput, color, remove]) {
             control.addEventListener("keydown", event => event.stopPropagation());
           }
-          summaryName.append(caret, nameInput, color);
+          summaryName.append(caret, nameInput, relationshipWrapper, ageInput, color);
           summary.append(summaryName, remove);
 
           const traitList = document.createElement("div");
@@ -1193,10 +1350,26 @@
         return { left: inset, top: inset, right: width - inset, bottom: height - inset };
       }
 
-      function chartPoint(person, bounds) {
+      function ageRange() {
+        let min = Infinity;
+        let max = -Infinity;
+        for (const person of state.people) {
+          if (person.age === undefined) continue;
+          min = Math.min(min, person.age);
+          max = Math.max(max, person.age);
+        }
+        return min === Infinity ? null : { min, max };
+      }
+
+      function chartPoint(person, bounds, range) {
+        if ((state.xTrait === AGE_AXIS || state.yTrait === AGE_AXIS) && person.age === undefined) return null;
+        const score = axis => {
+          if (axis !== AGE_AXIS) return Number(person.values[axis] ?? 50) / 100;
+          return range.min === range.max ? 0.5 : (person.age - range.min) / (range.max - range.min);
+        };
         return {
-          x: bounds.left + Number(person.values[state.xTrait] ?? 50) / 100 * (bounds.right - bounds.left),
-          y: bounds.bottom - Number(person.values[state.yTrait] ?? 50) / 100 * (bounds.bottom - bounds.top)
+          x: bounds.left + score(state.xTrait) * (bounds.right - bounds.left),
+          y: bounds.bottom - score(state.yTrait) * (bounds.bottom - bounds.top)
         };
       }
 
@@ -1208,9 +1381,10 @@
       function personAtPoint(point) {
         if (!state || !state.xTrait || !state.yTrait) return null;
         const bounds = chartBounds(point.width, point.height);
+        const range = ageRange();
         for (let i = state.people.length - 1; i >= 0; i--) {
-          const position = chartPoint(state.people[i], bounds);
-          if (Math.hypot(point.x - position.x, point.y - position.y) <= 12) return state.people[i];
+          const position = chartPoint(state.people[i], bounds, range);
+          if (position && Math.hypot(point.x - position.x, point.y - position.y) <= 12) return state.people[i];
         }
         return null;
       }
@@ -1238,12 +1412,30 @@
         }
       }
 
+      function selectChartPerson(person) {
+        selectedPersonId = person?.id ?? null;
+        el.chart.setAttribute("aria-label", person
+          ? `Selected ${person.name.trim() || "person"}. Use arrow keys to adjust traits.`
+          : "Scatter plot of people by selected traits. Select a person, then use arrow keys to adjust.");
+        drawChart();
+      }
+
+      document.addEventListener("pointerdown", event => {
+        if (!event.isPrimary || event.button !== 0 || !selectedPersonId || el.chart.parentElement.contains(event.target)) return;
+        hoveredPersonId = null;
+        selectChartPerson(null);
+      }, true);
+
       el.chart.addEventListener("pointerdown", event => {
         if (!event.isPrimary || event.button !== 0 || chartDrag) return;
         const point = pointerPosition(event);
         const person = personAtPoint(point);
+        const labelPerson = state?.people.find(item => item.id === labelAtPoint(point)?.personId);
+        selectChartPerson(person ?? labelPerson ?? null);
+        el.chart.focus({ preventScroll: true });
+        if (state?.xTrait === AGE_AXIS && state?.yTrait === AGE_AXIS) return;
         if (!person) return;
-        const position = chartPoint(person, chartBounds(point.width, point.height));
+        const position = chartPoint(person, chartBounds(point.width, point.height), ageRange());
         chartDrag = {
           pointerId: event.pointerId,
           graphId: activeGraphId,
@@ -1268,7 +1460,7 @@
             hoveredPersonId = personId;
             drawChart();
           }
-          el.chart.style.cursor = pointPerson ? "move" : "";
+          el.chart.style.cursor = pointPerson && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) ? "move" : "";
           return;
         }
         if (event.pointerId !== chartDrag.pointerId) return;
@@ -1283,8 +1475,8 @@
         if (chartDrag.xTrait === chartDrag.yTrait) {
           person.values[chartDrag.xTrait] = clamp((x + y) / 2);
         } else {
-          person.values[chartDrag.xTrait] = clamp(x);
-          person.values[chartDrag.yTrait] = clamp(y);
+          if (chartDrag.xTrait !== AGE_AXIS) person.values[chartDrag.xTrait] = clamp(x);
+          if (chartDrag.yTrait !== AGE_AXIS) person.values[chartDrag.yTrait] = clamp(y);
         }
         updatePersonSliders(person);
         drawChart();
@@ -1295,7 +1487,8 @@
         if (!chartDrag || event.pointerId !== chartDrag.pointerId) return;
         chartDrag = null;
         hoveredPersonId = null;
-        el.chart.style.cursor = event.type === "pointerup" && personAtPoint(pointerPosition(event)) ? "move" : "";
+        el.chart.style.cursor = event.type === "pointerup" && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) &&
+          personAtPoint(pointerPosition(event)) ? "move" : "";
         drawChart();
       }
 
@@ -1311,6 +1504,33 @@
       el.chart.addEventListener("pointerup", endChartDrag);
       el.chart.addEventListener("pointercancel", endChartDrag);
       el.chart.addEventListener("lostpointercapture", endChartDrag);
+      el.chart.addEventListener("keydown", event => {
+        if (event.key === "Escape" && selectedPersonId) {
+          selectChartPerson(null);
+          event.preventDefault();
+          return;
+        }
+        const direction = {
+          ArrowLeft: ["x", -1], ArrowRight: ["x", 1],
+          ArrowDown: ["y", -1], ArrowUp: ["y", 1]
+        }[event.key];
+        if (!direction || !state || !selectedPersonId || chartDrag) return;
+        const person = state.people.find(item => item.id === selectedPersonId);
+        if (!person) return;
+        const rect = el.chart.getBoundingClientRect();
+        if (!chartPoint(person, chartBounds(rect.width, rect.height), ageRange())) return;
+        event.preventDefault();
+        const trait = direction[0] === "x" ? state.xTrait : state.yTrait;
+        if (!trait || trait === AGE_AXIS) return;
+        const value = Number(person.values[trait] ?? 50);
+        const next = Math.max(0, Math.min(100, value + direction[1]));
+        if (next === value) return;
+        person.values[trait] = next;
+        hoveredPersonId = null;
+        updatePersonSliders(person);
+        drawChart();
+        scheduleSave();
+      });
       el.chart.addEventListener("dblclick", event => {
         const point = pointerPosition(event);
         const label = labelAtPoint(point);
@@ -1331,7 +1551,7 @@
           return;
         }
         const width = bounds.width;
-        const height = width * 445 / 620;
+        const height = bounds.height;
         const ratio = window.devicePixelRatio || 1;
         canvas.width = Math.round(width * ratio);
         canvas.height = Math.round(height * ratio);
@@ -1342,8 +1562,6 @@
         context.fillRect(0, 0, width, height);
 
         const { left, top, right, bottom } = chartBounds(width, height);
-        const plotWidth = right - left;
-        const plotHeight = bottom - top;
         context.font = "12px serif";
         context.textBaseline = "middle";
         context.lineWidth = 1;
@@ -1365,9 +1583,14 @@
 
         context.font = "bold 12px serif";
         context.textAlign = "left";
-        const points = state.people.map(person => chartPoint(person, { left, top, right, bottom }));
-        const labels = state.people.map((person, index) => {
-          const { x, y } = points[index];
+        const range = ageRange();
+        const plotted = state.people.map((person, index) => ({
+          person, index, point: chartPoint(person, { left, top, right, bottom }, range)
+        })).filter(item => item.point);
+        const count = plotted.length;
+        el.peopleCount.textContent = `${count} ${count === 1 ? "person" : "people"}`;
+        const labels = plotted.map(({ person, index, point }) => {
+          const { x, y } = point;
           const text = person.name.trim() || `Person ${index + 1}`;
           const metrics = context.measureText(text);
           const labelOnLeft = x > right - 90;
@@ -1385,11 +1608,12 @@
           };
         });
         chartLabelHits = labels.map(label => label.hit);
-        const hoveredIndex = state.people.findIndex(person => person.id === hoveredPersonId);
-        state.people.forEach((person, index) => {
-          const { x, y } = points[index];
+        const hoveredIndex = plotted.findIndex(({ person }) => person.id === (hoveredPersonId ?? selectedPersonId));
+        plotted.forEach(({ person, point }, index) => {
+          const { x, y } = point;
           context.globalAlpha = hoveredIndex !== -1 && index !== hoveredIndex ? 0.4 : 1;
-          context.fillStyle = person.color;
+          context.fillStyle = state.colorByRelationship
+            ? RELATIONSHIP_COLORS[person.relationship] ?? UNCLASSIFIED_COLOR : person.color;
           context.strokeStyle = "#fff";
           context.lineWidth = personDotBorderWidth;
           context.beginPath();
@@ -1408,15 +1632,16 @@
             context.fillRect(hit.left, hit.top, hit.right - hit.left, hit.bottom - hit.top);
           }
           context.strokeText(text, labelX, labelY);
-          context.fillStyle = "#000";
+          context.fillStyle = state.colorByRelationship && !plotted[index].person.relationship
+            ? UNCLASSIFIED_COLOR : "#000";
           context.fillText(text, labelX, labelY);
         };
-        state.people.forEach((_, index) => {
+        plotted.forEach((_, index) => {
           if (index !== hoveredIndex) drawLabel(index);
         });
         if (hoveredIndex !== -1) {
           drawLabel(hoveredIndex, true);
-          const { x, y } = points[hoveredIndex];
+          const { x, y } = plotted[hoveredIndex].point;
           context.strokeStyle = "#333";
           context.lineWidth = 1.5;
           context.lineCap = "round";
@@ -1431,6 +1656,7 @@
       }
 
       function render() {
+        el.relationshipColors.checked = state.colorByRelationship;
         renderAxes();
         renderPeople();
         renderDimensions();
@@ -1555,7 +1781,7 @@
         } catch (error) {
           activeGraphName = previousName;
           scheduleSave();
-          setSaveStatus(`Save failed: ${error.message}`, true);
+          setSaveStatus(`Save failed: ${error.message}`, { isError: true });
           showNotice(el.renameGraphNotice, `Couldn't rename this graph: ${error.message}`);
         } finally {
           renamingGraph = false;
@@ -1710,7 +1936,7 @@
         } catch (error) {
           colorPerson.color = previousColor;
           scheduleSave();
-          setSaveStatus(`Save failed: ${error.message}`, true);
+          setSaveStatus(`Save failed: ${error.message}`, { isError: true });
           showNotice(el.colorNotice, `Couldn't save this color: ${error.message}`);
         } finally {
           savingColor = false;
@@ -1790,7 +2016,7 @@
         } catch (error) {
           state = previousState;
           scheduleSave();
-          setSaveStatus(`Save failed: ${error.message}`, true);
+          setSaveStatus(`Save failed: ${error.message}`, { isError: true });
           showNotice(el.traitsNotice, `Couldn't save traits: ${error.message}`);
         } finally {
           savingTraits = false;
@@ -1801,6 +2027,13 @@
         }
       });
 
+      el.relationshipColors.addEventListener("change", () => {
+        state.colorByRelationship = el.relationshipColors.checked;
+        drawChart();
+        scheduleSave();
+      });
+
+      el.newPersonAge.addEventListener("input", () => validateAgeInput(el.newPersonAge));
       el.addPersonForm.addEventListener("submit", event => {
         event.preventDefault();
         const name = el.newPersonName.value.trim();
@@ -1809,9 +2042,20 @@
           showNotice(el.appNotice, "Enter a name before adding a person.");
           return;
         }
+        if (!validateAgeInput(el.newPersonAge)) {
+          el.newPersonAge.reportValidity();
+          return;
+        }
         const values = Object.fromEntries(state.traits.map(trait => [trait.id, 50]));
-        state.people.push({ id: makeId("person"), name, color: newPersonColor, values });
+        state.people.push({
+          id: makeId("person"), name, color: newPersonColor, values,
+          ...(el.newPersonRelationship.value === "" ? {} : { relationship: el.newPersonRelationship.value }),
+          ...(el.newPersonAge.value === "" ? {} : { age: el.newPersonAge.valueAsNumber })
+        });
         el.newPersonName.value = "";
+        el.newPersonRelationship.value = "";
+        newPersonDropdown.sync();
+        el.newPersonAge.value = "";
         newPersonColor = randomPersonColor();
         el.newPersonColor.style.backgroundColor = newPersonColor;
         render();
@@ -1861,8 +2105,41 @@
         });
       }
 
-      window.addEventListener("resize", drawChart);
-      new ResizeObserver(drawChart).observe(el.chart);
+      function alignPeopleList() {
+        if (window.matchMedia("(max-width: 760px)").matches || el.workspace.hidden) {
+          el.peopleList.style.maxHeight = "";
+          return;
+        }
+        const chartBottom = el.chart.parentElement.getBoundingClientRect().bottom;
+        const listTop = el.peopleList.getBoundingClientRect().top;
+        el.peopleList.style.maxHeight = `${Math.max(0, chartBottom - listTop)}px`;
+      }
+
+      function alignGraphColumn() {
+        const chartSpace = document.querySelector(".chart-space");
+        const footer = document.querySelector(".chart-footer");
+        const height = chartSpace.getBoundingClientRect().height;
+        if (height > 0) {
+          const footerSpace = footer.getBoundingClientRect().height + parseFloat(getComputedStyle(footer).marginTop);
+          chartSpace.style.setProperty("--chart-footer-space", `${footerSpace}px`);
+          document.querySelector(".layout").style.setProperty("--chart-available-width", `${Math.max(0, height - footerSpace)}px`);
+        }
+      }
+
+      window.addEventListener("resize", () => {
+        alignGraphColumn();
+        drawChart();
+        alignPeopleList();
+      });
+      const layoutObserver = new ResizeObserver(() => {
+        alignGraphColumn();
+        drawChart();
+        alignPeopleList();
+      });
+      for (const element of [el.chart.parentElement, document.querySelector(".chart-space"), document.querySelector(".chart-footer"), document.querySelector(".chart-heading"),
+                             document.querySelector(".people-heading"), el.addPersonForm]) {
+        layoutObserver.observe(element);
+      }
 
       async function initialize() {
         const config = readConfig() ?? DEFAULT_CONFIG;
