@@ -1,0 +1,1885 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Pear</title>
+    <style>
+      html[data-background="rainbow"] { background: radial-gradient(ellipse at 25% 20%, #ffffffb3, transparent 38%), conic-gradient(from 225deg at 55% 50%, #ff8fcd, #ffc483, #f8ef8b, #91e9bd, #8fd8ff, #c0a3f6, #ff8fcd); background-attachment: fixed; }
+      body { isolation: isolate; }
+      .rainbow-decor { display: none; position: fixed; inset: -16.6667vh -12.5vw; z-index: -1; overflow: hidden; pointer-events: none; }
+      html[data-background="rainbow"] .rainbow-decor { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); place-items: center; }
+      .rainbow-decor > span { --drift-x: 10px; --drift-y: -10px; font-size: 32px; opacity: .8; animation: rainbow-drift 16s ease-in-out infinite alternate; }
+      .rainbow-decor > span:nth-child(3n + 2) { --drift-x: -10px; --drift-y: 8px; animation-delay: -4s; }
+      .rainbow-decor > span:nth-child(3n) { --drift-x: 8px; --drift-y: 10px; animation-delay: -8s; }
+      @keyframes rainbow-drift { to { transform: translate(var(--drift-x), var(--drift-y)); } }
+      @media (prefers-reduced-motion: reduce) { .rainbow-decor span { animation: none; } }
+      .space-planets { display: none; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1100' height='800' viewBox='0 0 1100 800'%3E%3Cdefs%3E%3CradialGradient id='rust' cx='30%25' cy='25%25' r='75%25'%3E%3Cstop stop-color='%23db9b75'/%3E%3Cstop offset='.55' stop-color='%238c4f44'/%3E%3Cstop offset='1' stop-color='%23291e29'/%3E%3C/radialGradient%3E%3CradialGradient id='gold' cx='30%25' cy='25%25' r='75%25'%3E%3Cstop stop-color='%23e4d7b0'/%3E%3Cstop offset='.58' stop-color='%2391856f'/%3E%3Cstop offset='1' stop-color='%23262431'/%3E%3C/radialGradient%3E%3CradialGradient id='blue' cx='30%25' cy='25%25' r='75%25'%3E%3Cstop stop-color='%23a1c9d4'/%3E%3Cstop offset='.5' stop-color='%234a738d'/%3E%3Cstop offset='1' stop-color='%23111d36'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='40' cy='350' r='43' fill='url(%23rust)'/%3E%3Cg fill='%233b2529' opacity='.25'%3E%3Ccircle cx='24' cy='337' r='5'/%3E%3Ccircle cx='52' cy='365' r='8'/%3E%3Ccircle cx='42' cy='329' r='3'/%3E%3C/g%3E%3Cellipse cx='875' cy='175' rx='79' ry='18' fill='none' stroke='%23b0a28b' stroke-width='9' opacity='.65' transform='rotate(-18 875 175)'/%3E%3Ccircle cx='875' cy='175' r='42' fill='url(%23gold)'/%3E%3Cpath d='M839 161 Q875 151 910 160 M835 173 Q875 163 916 173 M837 187 Q875 177 913 187' fill='none' stroke='%23d2bda0' stroke-width='3' opacity='.22'/%3E%3Ccircle cx='510' cy='720' r='48' fill='url(%23blue)'/%3E%3Cpath d='M472 697 Q491 686 507 694 T543 692 M466 715 Q486 706 501 715 T552 709 M472 736 Q493 727 513 736 T548 731' fill='none' stroke='%23c9e2e4' stroke-width='4' opacity='.25'/%3E%3C/svg%3E") repeat; }
+      html[data-background="space"] .space-planets { display: block; }
+      html[data-background="sunset"] { background: radial-gradient(circle at 76% 32%, #fff9d1 0 7%, #ffdf9e 7.2% 12%, transparent 12.2%), linear-gradient(160deg, #c5b2f3 0%, #f2a4d5 37%, #ffb391 70%, #ffe1a2 100%); background-attachment: fixed; }
+      html[data-background="aqua"] { background: radial-gradient(ellipse at 20% 20%, #ffffffaa, transparent 42%), linear-gradient(130deg, #76e3d3, #91d4ff 42%, #c4abf5 68%, #85efd7); background-attachment: fixed; }
+      html[data-background="squiggles"] { background: #fff3bd url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='112' viewBox='0 0 128 112'%3E%3Cpath d='M5 24 q6 -12 12 0 t12 0 t12 0 t12 0' fill='none' stroke='%23ec7db9' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M72 68 q6 -12 12 0 t12 0 t12 0 t12 0' fill='none' stroke='%236ebbc9' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M73 16 l8 -7 8 7 8 -7' fill='none' stroke='%239d8fdb' stroke-width='2'/%3E%3Ccircle cx='31' cy='77' r='7' fill='none' stroke='%23efa764' stroke-width='2'/%3E%3Ccircle cx='110' cy='30' r='3' fill='%23f095bb'/%3E%3Ccircle cx='54' cy='100' r='3' fill='%2389c9b8'/%3E%3C/svg%3E") repeat; }
+      html[data-background="stars"] { background: #f4dcff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='120' viewBox='0 0 130 120'%3E%3Cpath d='M26 7 L30 19 L42 23 L30 27 L26 39 L22 27 L10 23 L22 19 Z' fill='%23ffcf65' stroke='%23e8a649' stroke-width='1.5'/%3E%3Cpath d='M96 48 L99 57 L108 60 L99 63 L96 72 L93 63 L84 60 L93 57 Z' fill='%23ff9ed2'/%3E%3Cpath d='M48 77 L50 84 L57 86 L50 88 L48 95 L46 88 L39 86 L46 84 Z' fill='%238dcde5'/%3E%3Ccircle cx='74' cy='20' r='2' fill='%23b494e9'/%3E%3Ccircle cx='115' cy='101' r='2' fill='%23f4ad76'/%3E%3C/svg%3E") repeat; }
+      html[data-background="clouds"] { background: #b8e3ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='760' height='420' viewBox='0 0 760 420'%3E%3Cdefs%3E%3Cpath id='c' d='M40 104 C14 104 7 87 13 71 C17 58 30 51 45 53 C50 26 75 15 97 25 C112 1 152 6 163 34 C185 22 215 34 216 58 C243 57 254 70 250 87 C248 99 239 104 222 104 Z'/%3E%3C/defs%3E%3Cg fill='%239acff1' opacity='.45' transform='translate(0 8)'%3E%3Cuse href='%23c' x='20' y='12'/%3E%3Cuse href='%23c' x='380' y='205'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Cuse href='%23c' x='20' y='12'/%3E%3Cuse href='%23c' x='380' y='205'/%3E%3C/g%3E%3Cg fill='%23fff' opacity='.8' transform='translate(490 28) scale(.65)'%3E%3Cuse href='%23c'/%3E%3C/g%3E%3Cpath d='M330 220 v18 M321 229 h18 M678 164 v12 M672 170 h12' stroke='%23fff9ca' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") repeat; }
+      html[data-background="magic-eye"] { background: #f5eafa var(--magic-eye-image) repeat 0 0 / 720px 360px; }
+      html[data-background="space"] { background-color: #04060d; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='360' viewBox='0 0 480 360'%3E%3Cg fill='%23fff' opacity='.8'%3E%3Ccircle cx='19' cy='37' r='.8'/%3E%3Ccircle cx='72' cy='13' r='.5'/%3E%3Ccircle cx='113' cy='78' r='1'/%3E%3Ccircle cx='163' cy='29' r='.6'/%3E%3Ccircle cx='212' cy='97' r='.7'/%3E%3Ccircle cx='267' cy='18' r='.8'/%3E%3Ccircle cx='312' cy='66' r='.5'/%3E%3Ccircle cx='361' cy='33' r='1'/%3E%3Ccircle cx='425' cy='71' r='.6'/%3E%3Ccircle cx='466' cy='16' r='.8'/%3E%3Ccircle cx='43' cy='130' r='.5'/%3E%3Ccircle cx='85' cy='169' r='.8'/%3E%3Ccircle cx='144' cy='126' r='.5'/%3E%3Ccircle cx='192' cy='178' r='1'/%3E%3Ccircle cx='247' cy='146' r='.6'/%3E%3Ccircle cx='295' cy='119' r='.8'/%3E%3Ccircle cx='347' cy='175' r='.5'/%3E%3Ccircle cx='400' cy='132' r='.8'/%3E%3Ccircle cx='453' cy='188' r='.6'/%3E%3Ccircle cx='14' cy='231' r='.6'/%3E%3Ccircle cx='65' cy='270' r='.9'/%3E%3Ccircle cx='122' cy='219' r='.5'/%3E%3Ccircle cx='171' cy='297' r='.8'/%3E%3Ccircle cx='225' cy='240' r='.6'/%3E%3Ccircle cx='278' cy='282' r='1'/%3E%3Ccircle cx='329' cy='225' r='.6'/%3E%3Ccircle cx='379' cy='283' r='.8'/%3E%3Ccircle cx='431' cy='246' r='.5'/%3E%3Ccircle cx='471' cy='320' r='.8'/%3E%3Ccircle cx='38' cy='339' r='.5'/%3E%3Ccircle cx='105' cy='326' r='.6'/%3E%3Ccircle cx='237' cy='344' r='.7'/%3E%3Ccircle cx='343' cy='332' r='.5'/%3E%3Ccircle cx='414' cy='349' r='.8'/%3E%3C/g%3E%3Cg fill='%23d2e7ff'%3E%3Ccircle cx='56' cy='91' r='1.3'/%3E%3Ccircle cx='259' cy='201' r='1.1'/%3E%3Ccircle cx='388' cy='102' r='1.3'/%3E%3Ccircle cx='150' cy='252' r='1.1'/%3E%3C/g%3E%3Cg fill='%23ffe2b7'%3E%3Ccircle cx='180' cy='70' r='1.1'/%3E%3Ccircle cx='318' cy='298' r='1.2'/%3E%3Ccircle cx='447' cy='119' r='1'/%3E%3C/g%3E%3Cg stroke='%23daeaff' stroke-width='.6' opacity='.65'%3E%3Cpath d='M28 181h12m-6-6v12 M291 43h14m-7-7v14 M395 223h12m-6-6v12'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='34' cy='181' r='1.3'/%3E%3Ccircle cx='298' cy='43' r='1.5'/%3E%3Ccircle cx='401' cy='223' r='1.3'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(ellipse at 75% 25%, #53415b55, transparent 38%), radial-gradient(ellipse at 27% 75%, #24394e88, transparent 45%), linear-gradient(135deg, #03050b, #101322 55%, #040610); background-size: 480px 360px, 100% 100%, 100% 100%, 100% 100%; background-attachment: fixed; }
+      html[data-background="space"] .page { color: #fff; }
+      html[data-background="space"] dialog { color: #000; }
+      html[data-background="space"] #auth-notice:not(.notice-ok), html[data-background="space"] #app-notice:not(.notice-ok), html[data-background="space"] .background-error { color: #ffbaba; }
+      [hidden], .notice { display: none; }
+      .notice.visible { display: block; margin: 1em 0; }
+      .notice:not(.notice-ok), .save-status.error { color: #a00; }
+      .page { max-width: 1100px; margin: 0 auto; padding-bottom: 4em; }
+      html:has(#workspace:not([hidden])) { overflow: hidden; }
+      .page:has(#workspace:not([hidden])) { display: flex; flex-direction: column; height: calc(100dvh - 16px); padding-bottom: 0; }
+      .page:has(#workspace:not([hidden])) .content { display: flex; flex: 1; min-height: 0; }
+      #workspace:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+      .background-selector { position: fixed; right: 1em; bottom: 1em; z-index: 1; }
+      .background-toggle { display: block; margin-left: auto; }
+      .background-toggle::after { content: " ▴"; }
+      #background-select, #graph-select, .axis-end select { position: absolute; z-index: 2; min-width: 100%; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; outline: none; color: #000; background: #fff; }
+      #background-select { right: 0; bottom: calc(100% + .25em); max-height: calc(100dvh - 5em); }
+      #graph-select { left: 0; top: calc(100% + .25em); }
+      #background-select option, #graph-select option, .axis-end option { padding: 1px 4px; }
+      .dropdown-highlight { position: absolute; z-index: 3; overflow: hidden; color: #fff; background: #00f; pointer-events: none; }
+      .dropdown-highlight span { position: absolute; box-sizing: border-box; padding: 1px 4px; overflow: hidden; white-space: nowrap; }
+      .dropdown-hover { z-index: 4; }
+      .background-error { max-width: 20em; color: #a00; }
+      .masthead, .account-bar:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; }
+      .masthead { justify-content: space-between; }
+      .auth-form { display: grid; gap: .5em; max-width: 30em; margin: 1em 0; }
+      .auth-actions, .add-row, .dimension-row, .people-heading, .chart-heading {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .5em;
+      }
+      .setup-details { margin: 1em 0; }
+      .save-status { position: fixed; left: 1em; bottom: 1em; z-index: 1; margin: 0; color: #000; background: #fff; }
+      .layout { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr) min(32%, 17.5rem); grid-template-rows: minmax(0, 1fr); gap: 1em 2.75em; }
+      .graph-select { position: relative; flex: 1 1 90px; min-width: 90px; }
+      .graph-badge { border: 1px solid #767676; border-radius: 2px; padding: 2px 6px; background: #efefef; color: #000; font: 13.3333px Arial, sans-serif; white-space: nowrap; }
+      .graph-toggle, .axis-toggle { position: relative; display: flex; width: 100%; padding-right: 24px; text-align: left; }
+      .graph-toggle span, .axis-toggle span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .graph-toggle::after, .axis-toggle::after { content: "▾"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+      .panel { min-width: 0; }
+      .graph-panel, .people-panel { display: flex; flex-direction: column; min-height: 0; }
+      .chart-space { flex: 1; min-height: 0; container-type: size; }
+      .chart-body { width: min(100%, (100cqh - 2em - 2px) * 620 / 445); }
+      .chart-frame { --plot-inset: 20px; position: relative; box-sizing: border-box; border: 1px solid rgba(0, 0, 0, .15); border-radius: 8px; }
+      #chart { display: block; width: 100%; aspect-ratio: 620 / 445; border-radius: inherit; touch-action: none; }
+      .chart-hint { position: absolute; left: 8px; bottom: 6px; max-width: calc(50% - 16px); margin: 0; color: #000; font-size: .85em; pointer-events: none; }
+      .axis-end { position: absolute; max-width: calc(50% - var(--plot-inset) - 12px); color: #000; }
+      .axis-end:focus-within { z-index: 3; }
+      .axis-toggle { appearance: none; border: 0; padding: 3px 26px 3px 8px; background: transparent; color: inherit; cursor: pointer; font: 13.333px Arial, sans-serif; }
+      .axis-toggle:focus-visible { outline: 2px solid; outline-offset: 1px; }
+      .axis-toggle::after { content: ""; right: 10px; width: 6px; height: 6px; border-right: 1px solid; border-bottom: 1px solid; transform: translateY(-65%) rotate(45deg); pointer-events: none; }
+      .axis-end select { top: calc(100% + .25em); left: 0; }
+      .axis-x-low, .axis-x-high { top: 50%; transform: translateY(calc(-100% - 3px)); }
+      .axis-x-low { left: var(--plot-inset); }
+      .axis-x-high { right: var(--plot-inset); }
+      .axis-x-low .axis-toggle { padding-left: 0; }
+      .axis-x-high .axis-toggle { padding-right: 17px; }
+      .axis-x-high .axis-toggle::after { right: 1px; }
+      .axis-x-high select { left: auto; right: 0; }
+      .axis-y-low, .axis-y-high { left: calc(50% + 2px); }
+      .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
+      .axis-y-high { top: calc(var(--plot-inset) - 3px); }
+      .people-content { --person-action-width: 6.25rem; display: grid; flex: 1; grid-template-rows: auto minmax(0, 1fr); width: fit-content; max-width: 100%; min-height: 0; }
+      .people-list { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+      #add-person-form { flex-wrap: nowrap; min-width: 0; gap: .4rem; }
+      #add-person-form button[type=submit] { width: var(--person-action-width); flex: none; margin-left: .1rem; }
+      #new-person-name { flex: 1 1 auto; min-width: 0; max-width: 100%; box-sizing: border-box; }
+      .person-card { margin: .75em 0; }
+      .person-summary { display: grid; grid-template-columns: minmax(0, 1fr) var(--person-action-width); align-items: center; gap: .5em; cursor: pointer; list-style: none; }
+      .person-summary::-webkit-details-marker { display: none; }
+      .summary-name { display: flex; align-items: center; gap: .4rem; min-width: 0; }
+      .person-caret { border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 6px solid; }
+      .person-card[open] .person-caret { transform: rotate(90deg); }
+      .person-name { flex: 1; min-width: 0; }
+      .person-summary button { justify-self: start; }
+      .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
+      .chart-heading h2, .people-heading h2 { font-size: 1.25em; }
+      .chart-footer { display: flex; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
+      .privacy-note { margin: 0; text-align: right; font-size: .85em; }
+      .trait-list { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) minmax(0, max-content); column-gap: .5em; margin: .5em 0 0 calc(6px + .4em); }
+      .trait-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
+      .trait-row input { width: 100%; min-width: 0; margin: 0; }
+      .trait-row span { overflow-wrap: anywhere; }
+      .trait-row span:last-child { text-align: right; }
+      .dimension-row { margin: .5em 0; }
+      .swap-trait { border: 0; background: transparent; padding: 0 2px; font-size: 1.15em; cursor: pointer; }
+      dialog { max-width: calc(100% - 4em); max-height: calc(100% - 4em); border-radius: 8px; }
+      dialog::backdrop { background: rgba(0, 0, 0, .5); }
+      dialog > h2 { margin-top: 0; }
+      .graph-dialog { width: 25em; box-sizing: border-box; }
+      .graph-dialog input { min-width: 0; }
+      .graph-dialog .auth-form { margin-bottom: 0; }
+      .graph-dialog .notice.visible { margin: 0; }
+      .dialog-actions { display: flex; justify-content: flex-end; gap: .5em; margin: 2em 0 0; }
+      .graph-dialog .dialog-actions { margin-top: 1.5em; }
+      .color-wheel { position: relative; width: 220px; max-width: 100%; aspect-ratio: 1; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle closest-side, white, transparent), conic-gradient(red, yellow, lime, cyan, blue, magenta, red); cursor: crosshair; touch-action: none; }
+      .color-wheel:focus-visible { outline: 2px solid; outline-offset: 3px; }
+      .color-marker { position: absolute; width: 10px; height: 10px; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 1px black; transform: translate(-50%, -50%); pointer-events: none; }
+      .color-fields { display: grid; gap: .5em; }
+      .color-fields input { min-width: 0; }
+      #color-title { padding-right: calc(52px + 1em); }
+      .color-preview { position: absolute; top: 1em; right: 1em; width: 52px; height: 52px; border-radius: 50%; }
+      .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+      @media (max-width: 760px) { .layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); } }
+      @media (max-width: 500px) { .save-status { bottom: 4em; max-width: calc(100% - 2em); } }
+    </style>
+  </head>
+  <body>
+    <div class="rainbow-decor" aria-hidden="true">
+      <span>🌈</span><span>🌈</span><span>🌈</span>
+      <span>🌈</span><span>🌈</span><span>🌈</span>
+      <span>🌈</span><span>🌈</span><span>🌈</span>
+      <span>🌈</span><span>🌈</span><span>🌈</span>
+      <span>🌈</span><span>🌈</span><span>🌈</span><span>🌈</span>
+      <span>🌈</span><span>🌈</span><span>🌈</span><span>🌈</span>
+    </div>
+    <div class="space-planets" aria-hidden="true"></div>
+    <main class="page">
+      <header class="masthead">
+        <p class="brand"><span aria-hidden="true">🍐</span> The Pear</p>
+        <div class="account-bar" id="account-bar" hidden>
+          <span class="account-email" id="account-email"></span>
+          <button class="button" id="sign-out" type="button">Sign out</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="panel auth-panel" id="auth-screen" aria-labelledby="auth-title">
+          <h1 id="auth-title">Welcome to The Pear!</h1>
+          <p class="muted">Sign in to keep your graphs private and available on your other devices.</p>
+          <form class="auth-form" id="sign-in-form">
+            <label class="field-label" for="auth-email">Your email address</label>
+            <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+            <div class="auth-actions">
+              <button class="button button-pink" id="email-sign-in" type="submit">Email me a sign-in link</button>
+              <button class="button" id="google-sign-in" type="button">Sign in with Google</button>
+            </div>
+          </form>
+          <details class="setup-details" id="connection-details" hidden>
+            <summary id="connection-summary">Set up Supabase connection</summary>
+            <form class="auth-form" id="connection-form">
+              <label class="field-label" for="project-url">Supabase project URL</label>
+              <input id="project-url" type="url" placeholder="https://your-project.supabase.co" required>
+              <label class="field-label" for="public-key">Supabase publishable key</label>
+              <input id="public-key" type="password" autocomplete="off" placeholder="sb_publishable_..." required>
+              <button class="button" type="submit">Save connection</button>
+            </form>
+          </details>
+          <div class="notice" id="auth-notice" role="status" aria-live="polite"></div>
+        </section>
+
+        <section id="workspace" hidden>
+          <div class="intro">
+            <p class="muted">Add people and their traits. Only you can see your graphs.</p>
+          </div>
+
+          <div class="save-status" id="save-status" role="status" aria-live="polite"></div>
+
+          <div class="layout">
+            <section class="panel graph-panel" aria-labelledby="chart-title">
+              <header class="panel-heading chart-heading">
+                <h2 id="chart-title">Graph</h2>
+                <span class="graph-select">
+                  <button id="graph-toggle" class="graph-toggle" type="button" aria-label="Choose a graph" aria-haspopup="listbox" aria-expanded="false" aria-controls="graph-select" disabled><span>Choose a graph</span></button>
+                  <select id="graph-select" aria-label="Choose a graph" size="9" hidden></select>
+                </span>
+                <time class="graph-badge" id="graph-created"></time>
+                <button class="button" id="rename-graph" type="button">Rename</button>
+                <button class="button button-danger" id="delete-graph" type="button">Delete</button>
+                <button class="button" id="new-graph" type="button">+ New graph</button>
+              </header>
+              <div class="chart-space">
+                <div class="chart-body">
+                  <div class="chart-frame">
+                    <canvas id="chart" role="img" aria-label="Scatter plot of people by selected traits">
+                      Scatter plot of people by selected traits.
+                    </canvas>
+                    <span class="axis-end axis-x-low"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="x-axis-low"><span></span></button><select id="x-axis-low" aria-label="Horizontal axis trait, left end" size="9" hidden></select></span>
+                    <span class="axis-end axis-x-high"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="x-axis-high"><span></span></button><select id="x-axis-high" aria-label="Horizontal axis trait, right end" size="9" hidden></select></span>
+                    <span class="axis-end axis-y-low"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="y-axis-low"><span></span></button><select id="y-axis-low" aria-label="Vertical axis trait, bottom end" size="9" hidden></select></span>
+                    <span class="axis-end axis-y-high"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="y-axis-high"><span></span></button><select id="y-axis-high" aria-label="Vertical axis trait, top end" size="9" hidden></select></span>
+                    <p class="chart-hint">Drag a person to adjust</p>
+                  </div>
+                  <div class="chart-footer">
+                    <span class="graph-badge" id="people-count"></span>
+                    <p class="privacy-note">Your graphs stay private to your account</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel people-panel" aria-labelledby="people-title">
+              <header class="panel-heading people-heading">
+                <h2 id="people-title">People</h2>
+                <button id="open-traits" type="button">Traits</button>
+              </header>
+              <div class="people-content">
+                <form id="add-person-form" class="add-row">
+                  <input id="new-person-name" type="text" size="31" maxlength="40" placeholder="Name" aria-label="New person's name">
+                  <button class="person-color" id="new-person-color" type="button" aria-label="Choose color for new person"></button>
+                  <button class="button" type="submit">+ New person</button>
+                </form>
+                <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
+              </div>
+              <div id="app-notice" class="notice" role="status" aria-live="polite"></div>
+            </section>
+          </div>
+
+          <dialog class="graph-dialog" id="rename-graph-dialog" aria-labelledby="rename-graph-title">
+            <h2 id="rename-graph-title">Rename graph</h2>
+            <form id="rename-graph-form" class="auth-form">
+              <label for="rename-graph-name">Graph name</label>
+              <input id="rename-graph-name" type="text" maxlength="80">
+              <div id="rename-graph-notice" class="notice" role="status" aria-live="polite"></div>
+              <div class="dialog-actions">
+                <button id="cancel-rename-graph" type="button">Cancel</button>
+                <button id="save-graph-name" type="submit">Save</button>
+              </div>
+            </form>
+          </dialog>
+
+          <dialog class="graph-dialog" id="new-graph-dialog" aria-labelledby="new-graph-title">
+            <h2 id="new-graph-title">New graph</h2>
+            <form id="new-graph-form" class="auth-form">
+              <label for="new-graph-name">Graph name</label>
+              <input id="new-graph-name" type="text" maxlength="80" value="Untitled graph">
+              <div id="new-graph-notice" class="notice" role="status" aria-live="polite"></div>
+              <div class="dialog-actions">
+                <button id="cancel-new-graph" type="button">Cancel</button>
+                <button id="create-graph" type="submit">Save</button>
+              </div>
+            </form>
+          </dialog>
+
+          <dialog class="graph-dialog" id="delete-graph-dialog" aria-labelledby="delete-graph-title" aria-describedby="delete-graph-message">
+            <h2 id="delete-graph-title">Delete graph</h2>
+            <form id="delete-graph-form" class="auth-form">
+              <div id="delete-graph-message"></div>
+              <div id="delete-graph-notice" class="notice" role="status" aria-live="polite"></div>
+              <div class="dialog-actions">
+                <button id="cancel-delete-graph" type="button">Cancel</button>
+                <button id="confirm-delete-graph" type="submit">Delete</button>
+              </div>
+            </form>
+          </dialog>
+
+          <dialog class="graph-dialog" id="color-dialog" aria-labelledby="color-title">
+            <h2 id="color-title">Person color</h2>
+            <span id="color-preview" class="color-preview" aria-hidden="true"></span>
+            <form id="color-form" class="auth-form">
+              <div id="color-fields" class="color-fields">
+                <div id="color-wheel" class="color-wheel" role="group" tabindex="0" aria-label="Color wheel. Use left and right arrows for hue, up and down arrows for saturation">
+                  <span id="color-marker" class="color-marker" aria-hidden="true"></span>
+                </div>
+                <span id="color-status" class="visually-hidden" aria-live="polite"></span>
+                <label for="color-brightness">Brightness</label>
+                <input id="color-brightness" type="range" min="0" max="100">
+              </div>
+              <div id="color-notice" class="notice" role="status" aria-live="polite"></div>
+              <div class="dialog-actions">
+                <button id="cancel-color" type="button">Cancel</button>
+                <button id="save-color" type="submit">Save</button>
+              </div>
+            </form>
+          </dialog>
+
+          <dialog id="traits-dialog" aria-labelledby="traits-title">
+            <h2 id="traits-title">Traits</h2>
+            <p>Each trait runs from its low end (left or bottom) to its high end (right or top).</p>
+            <div id="dimensions" class="dimensions"></div>
+            <form id="add-trait-form" class="add-row">
+              <input id="new-trait-low" type="text" maxlength="32" placeholder="Low end (e.g. Lame)" aria-label="New trait low end">
+              <button id="swap-new-trait" class="swap-trait" type="button" aria-label="Swap new trait ends" title="Swap trait ends">⇄</button>
+              <input id="new-trait-name" type="text" maxlength="32" placeholder="High end (e.g. Cool)" aria-label="New trait high end">
+              <button class="button" type="submit">Add trait</button>
+            </form>
+            <div id="traits-notice" class="notice" role="status" aria-live="polite"></div>
+            <p class="dialog-actions">
+              <button id="cancel-traits" type="button">Cancel</button>
+              <button id="save-traits" type="button">Save</button>
+            </p>
+          </dialog>
+
+        </section>
+      </div>
+    </main>
+
+    <aside class="background-selector" hidden>
+      <button id="background-toggle" class="background-toggle" type="button" aria-label="Background: Plain" aria-haspopup="listbox" aria-expanded="false" aria-controls="background-select">Plain</button>
+      <select id="background-select" aria-label="Background" size="9" hidden>
+        <option value="plain">Plain</option>
+        <option value="rainbow">Rainbow gradient</option>
+        <option value="sunset">Sunset gradient</option>
+        <option value="aqua">Aqua gradient</option>
+        <option value="squiggles">Squiggles</option>
+        <option value="stars">Stars</option>
+        <option value="clouds">Clouds</option>
+        <option value="magic-eye">Magic Eye</option>
+        <option value="space">Outer space</option>
+      </select>
+      <div id="background-error" class="background-error" role="status" aria-live="polite"></div>
+    </aside>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const CONFIG_KEY = "people-map-supabase-config";
+      const BACKGROUND_KEY = "the-pear-background";
+      const DEFAULT_CONFIG = {
+        url: "https://auhvnhytuxhhzdsjiugt.supabase.co",
+        key: "sb_publishable_vsbBzlNtb1Aa0z6sAGG8WA_43xh9JQ_"
+      };
+      const COLORS = ["#145c92", "#c52d83", "#468949", "#dc7720", "#744aa0", "#009a9a", "#ba3a35", "#5555a4"];
+      const DEFAULT_TRAITS = [
+        { id: "openness", name: "Openness", opposite: "Low openness" },
+        { id: "energy", name: "Energy", opposite: "Low energy" },
+        { id: "sociability", name: "Sociability", opposite: "Low sociability" }
+      ];
+
+      const el = {
+        authScreen: document.getElementById("auth-screen"),
+        backgroundToggle: document.getElementById("background-toggle"),
+        backgroundSelect: document.getElementById("background-select"),
+        backgroundError: document.getElementById("background-error"),
+        authNotice: document.getElementById("auth-notice"),
+        authEmail: document.getElementById("auth-email"),
+        signInForm: document.getElementById("sign-in-form"),
+        emailSignIn: document.getElementById("email-sign-in"),
+        googleSignIn: document.getElementById("google-sign-in"),
+        connectionForm: document.getElementById("connection-form"),
+        connectionDetails: document.getElementById("connection-details"),
+        connectionSummary: document.getElementById("connection-summary"),
+        projectUrl: document.getElementById("project-url"),
+        publicKey: document.getElementById("public-key"),
+        accountBar: document.getElementById("account-bar"),
+        accountEmail: document.getElementById("account-email"),
+        signOut: document.getElementById("sign-out"),
+        workspace: document.getElementById("workspace"),
+        graphToggle: document.getElementById("graph-toggle"),
+        graphSelect: document.getElementById("graph-select"),
+        graphCreated: document.getElementById("graph-created"),
+        peopleCount: document.getElementById("people-count"),
+        renameGraph: document.getElementById("rename-graph"),
+        renameGraphDialog: document.getElementById("rename-graph-dialog"),
+        renameGraphForm: document.getElementById("rename-graph-form"),
+        renameGraphName: document.getElementById("rename-graph-name"),
+        renameGraphNotice: document.getElementById("rename-graph-notice"),
+        saveGraphName: document.getElementById("save-graph-name"),
+        cancelRenameGraph: document.getElementById("cancel-rename-graph"),
+        newGraph: document.getElementById("new-graph"),
+        newGraphDialog: document.getElementById("new-graph-dialog"),
+        newGraphForm: document.getElementById("new-graph-form"),
+        newGraphName: document.getElementById("new-graph-name"),
+        newGraphNotice: document.getElementById("new-graph-notice"),
+        createGraph: document.getElementById("create-graph"),
+        cancelNewGraph: document.getElementById("cancel-new-graph"),
+        colorDialog: document.getElementById("color-dialog"),
+        colorForm: document.getElementById("color-form"),
+        colorFields: document.getElementById("color-fields"),
+        colorWheel: document.getElementById("color-wheel"),
+        colorMarker: document.getElementById("color-marker"),
+        colorStatus: document.getElementById("color-status"),
+        colorBrightness: document.getElementById("color-brightness"),
+        colorPreview: document.getElementById("color-preview"),
+        colorNotice: document.getElementById("color-notice"),
+        cancelColor: document.getElementById("cancel-color"),
+        saveColor: document.getElementById("save-color"),
+        deleteGraph: document.getElementById("delete-graph"),
+        deleteGraphDialog: document.getElementById("delete-graph-dialog"),
+        deleteGraphForm: document.getElementById("delete-graph-form"),
+        deleteGraphMessage: document.getElementById("delete-graph-message"),
+        deleteGraphNotice: document.getElementById("delete-graph-notice"),
+        cancelDeleteGraph: document.getElementById("cancel-delete-graph"),
+        confirmDeleteGraph: document.getElementById("confirm-delete-graph"),
+        saveStatus: document.getElementById("save-status"),
+        xAxes: [document.getElementById("x-axis-low"), document.getElementById("x-axis-high")],
+        yAxes: [document.getElementById("y-axis-low"), document.getElementById("y-axis-high")],
+        chart: document.getElementById("chart"),
+        peopleList: document.getElementById("people-list"),
+        dimensions: document.getElementById("dimensions"),
+        traitsDialog: document.getElementById("traits-dialog"),
+        traitsNotice: document.getElementById("traits-notice"),
+        openTraits: document.getElementById("open-traits"),
+        cancelTraits: document.getElementById("cancel-traits"),
+        saveTraits: document.getElementById("save-traits"),
+        appNotice: document.getElementById("app-notice"),
+        addPersonForm: document.getElementById("add-person-form"),
+        newPersonName: document.getElementById("new-person-name"),
+        newPersonColor: document.getElementById("new-person-color"),
+        addTraitForm: document.getElementById("add-trait-form"),
+        newTraitLow: document.getElementById("new-trait-low"),
+        swapNewTrait: document.getElementById("swap-new-trait"),
+        newTraitName: document.getElementById("new-trait-name")
+      };
+
+      let client = null;
+      let currentUser = null;
+      let graphs = [];
+      let activeGraphId = null;
+      let activeGraphName = "";
+      let state = null;
+      let saveTimer = null;
+      let pendingSave = null;
+      let saveQueue = Promise.resolve();
+      let saveVersion = 0;
+      let authNoticeTimer = null;
+      let appNoticeTimer = null;
+      let chartDrag = null;
+      let hoveredPersonId = null;
+      let chartLabelHits = [];
+      let creatingGraph = false;
+      let deletingGraph = false;
+      let deleteTargetId = null;
+      let renamingGraph = false;
+      let traitsDraft = null;
+      let savingTraits = false;
+      let colorPerson = null;
+      let colorButton = null;
+      let colorHue = 0;
+      let colorSaturation = 0;
+      let colorValue = 1;
+      let colorDraft = "";
+      let colorDragging = false;
+      let savingColor = false;
+      let newPersonColor = randomPersonColor();
+      el.newPersonColor.style.backgroundColor = newPersonColor;
+
+      function initialState() {
+        return {
+          traits: DEFAULT_TRAITS.map(trait => ({ ...trait })),
+          people: [],
+          xTrait: "openness",
+          yTrait: "energy"
+        };
+      }
+
+      let magicEyeImage = "";
+
+      function applyBackground(background) {
+        if (background === "magic-eye" && !magicEyeImage) {
+          const canvas = document.createElement("canvas");
+          canvas.width = 720;
+          canvas.height = 360;
+          const context = canvas.getContext("2d");
+          if (!context) throw new Error("The pattern couldn't be drawn.");
+          const colors = ["#f5cdeb", "#c5eae1", "#c9dcff", "#ffe4b9", "#ddc9f3", "#f7eec5"];
+          let seed = 81731;
+          for (let y = 0; y < 120; y++) {
+            const row = [];
+            for (let x = 0; x < 240; x++) {
+              const heartX = (x * 3 - 360) / 85;
+              const heartY = (180 - y * 3) / 85;
+              const shape = heartX ** 2 + heartY ** 2 - 1;
+              const inHeart = shape ** 3 - heartX ** 2 * heartY ** 3 < 0;
+              const separation = 24 - (inHeart ? 5 : 0);
+              if (x < 24) {
+                seed = (1664525 * seed + 1013904223) >>> 0;
+                row[x] = (seed >>> 24) % colors.length;
+              } else {
+                row[x] = row[x - separation];
+              }
+              context.fillStyle = colors[row[x]];
+              context.fillRect(x * 3, y * 3, 3, 3);
+            }
+          }
+          magicEyeImage = canvas.toDataURL();
+          document.documentElement.style.setProperty("--magic-eye-image", `url("${magicEyeImage}")`);
+        }
+        document.documentElement.dataset.background = background;
+      }
+
+      function loadBackground() {
+        try {
+          const saved = localStorage.getItem(BACKGROUND_KEY);
+          if (saved === null) return;
+          if (![...el.backgroundSelect.options].some(option => option.value === saved)) {
+            el.backgroundError.textContent = "The saved background is unavailable. Choose another.";
+            return;
+          }
+          applyBackground(saved);
+          el.backgroundSelect.value = saved;
+        } catch (error) {
+          el.backgroundError.textContent = `Couldn't load the saved background: ${error.message}`;
+        }
+      }
+
+      function setupDropdown(toggle, select, deferChange = false, options = {}) {
+        let startingValue = "";
+        let committing = false;
+        let pointer = null;
+        const selected = document.createElement("span");
+        const hover = document.createElement("span");
+        for (const highlight of [selected, hover]) {
+          highlight.className = "dropdown-highlight";
+          highlight.setAttribute("aria-hidden", "true");
+          highlight.hidden = true;
+          highlight.append(document.createElement("span"));
+        }
+        hover.classList.add("dropdown-hover");
+        select.after(selected, hover);
+
+        function paintHighlight(highlight, option) {
+          if (!option || select.hidden) {
+            highlight.hidden = true;
+            return;
+          }
+          const menu = select.getBoundingClientRect();
+          const left = menu.left + select.clientLeft;
+          const top = menu.top + select.clientTop;
+          const right = left + select.clientWidth;
+          const bottom = top + select.clientHeight;
+          const rect = option.getBoundingClientRect();
+          const clippedLeft = Math.max(left, rect.left);
+          const clippedTop = Math.max(top, rect.top);
+          const clippedRight = Math.min(right, rect.right);
+          const clippedBottom = Math.min(bottom, rect.bottom);
+          if (clippedLeft >= clippedRight || clippedTop >= clippedBottom) {
+            highlight.hidden = true;
+            return;
+          }
+          const parent = select.parentElement.getBoundingClientRect();
+          highlight.style.left = `${clippedLeft - parent.left}px`;
+          highlight.style.top = `${clippedTop - parent.top}px`;
+          highlight.style.width = `${clippedRight - clippedLeft}px`;
+          highlight.style.height = `${clippedBottom - clippedTop}px`;
+          const text = highlight.firstElementChild;
+          text.textContent = option.textContent;
+          text.style.left = `${rect.left - clippedLeft}px`;
+          text.style.top = `${rect.top - clippedTop}px`;
+          text.style.width = `${rect.width}px`;
+          text.style.height = `${rect.height}px`;
+          text.style.font = getComputedStyle(option).font;
+          highlight.hidden = false;
+        }
+
+        function updateHighlights() {
+          paintHighlight(selected, select.selectedOptions[0]);
+          const menu = select.getBoundingClientRect();
+          const left = menu.left + select.clientLeft;
+          const top = menu.top + select.clientTop;
+          const right = left + select.clientWidth;
+          const bottom = top + select.clientHeight;
+          const option = pointer && [...select.options].find(item => {
+            const rect = item.getBoundingClientRect();
+            return !item.disabled && pointer.x >= left && pointer.x < right &&
+              pointer.y >= Math.max(top, rect.top) && pointer.y < Math.min(bottom, rect.bottom);
+          });
+          paintHighlight(hover, option);
+        }
+
+        function sync() {
+          const label = options.label ? options.label() : select.selectedOptions[0]?.textContent || "Choose a graph";
+          (toggle.querySelector("span") || toggle).textContent = label;
+          toggle.setAttribute("aria-label", `${select.getAttribute("aria-label")}: ${label}`);
+          toggle.disabled = select.disabled || !select.options.length;
+        }
+
+        function close(restoreFocus = false, commit = false) {
+          if (select.hidden) return;
+          const changed = deferChange && commit && select.value !== startingValue;
+          if (deferChange && !commit) select.value = startingValue;
+          select.hidden = true;
+          pointer = null;
+          selected.hidden = true;
+          hover.hidden = true;
+          toggle.setAttribute("aria-expanded", "false");
+          if (changed) {
+            sync();
+            committing = true;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+            committing = false;
+          }
+          if (restoreFocus) toggle.focus();
+        }
+
+        toggle.addEventListener("click", () => {
+          if (!select.hidden) {
+            close();
+            return;
+          }
+          startingValue = select.value;
+          if (deferChange) {
+            const bounds = toggle.getBoundingClientRect();
+            select.size = Math.min(9, Math.max(2, select.options.length));
+            select.style.height = "";
+            select.style.maxHeight = options.autoDirection ? "" : `${Math.max(0, window.innerHeight - bounds.bottom - 20)}px`;
+            const availableWidth = options.alignRight ? bounds.right - 16 : window.innerWidth - bounds.left - 16;
+            select.style.maxWidth = `${Math.max(bounds.width, availableWidth)}px`;
+          }
+          select.hidden = false;
+          if (deferChange && select.options.length === 1) {
+            const style = getComputedStyle(select);
+            const borderAndPadding = ["borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"]
+              .reduce((total, property) => total + parseFloat(style[property]), 0);
+            select.style.height = `${select.options[0].getBoundingClientRect().height + borderAndPadding}px`;
+          }
+          if (options.autoDirection) {
+            const bounds = toggle.getBoundingClientRect();
+            const below = Math.max(0, window.innerHeight - bounds.bottom - 20);
+            const above = Math.max(0, bounds.top - 20);
+            const opensUp = select.getBoundingClientRect().height + 4 > below && above > below;
+            select.style.top = opensUp ? "auto" : "calc(100% + .25em)";
+            select.style.bottom = opensUp ? "calc(100% + .25em)" : "auto";
+            select.style.maxHeight = `${opensUp ? above : below}px`;
+          }
+          toggle.setAttribute("aria-expanded", "true");
+          select.focus();
+          updateHighlights();
+        });
+        select.addEventListener("change", event => {
+          updateHighlights();
+          if (deferChange && !committing && !select.hidden) event.stopImmediatePropagation();
+        });
+        select.addEventListener("click", () => close(true, true));
+        select.addEventListener("pointermove", event => {
+          pointer = { x: event.clientX, y: event.clientY };
+          updateHighlights();
+        });
+        select.addEventListener("pointerleave", () => {
+          pointer = null;
+          updateHighlights();
+        });
+        select.addEventListener("scroll", updateHighlights);
+        select.addEventListener("keydown", event => {
+          pointer = null;
+          updateHighlights();
+          if (event.key === "Escape" || event.key === "Enter" || (deferChange && event.key === " ")) {
+            event.preventDefault();
+            close(true, event.key !== "Escape");
+          }
+        });
+        select.addEventListener("focusout", event => {
+          if (!select.parentElement.contains(event.relatedTarget)) close();
+        });
+        document.addEventListener("pointerdown", event => {
+          if (!select.hidden && !toggle.parentElement.contains(event.target)) close();
+        });
+        return { sync };
+      }
+
+      const backgroundDropdown = setupDropdown(el.backgroundToggle, el.backgroundSelect);
+      const graphDropdown = setupDropdown(el.graphToggle, el.graphSelect, true);
+      const axisDropdowns = new Map();
+      for (const controls of [el.xAxes, el.yAxes]) {
+        controls.forEach((select, index) => {
+          axisDropdowns.set(select, setupDropdown(select.previousElementSibling, select, true, {
+            autoDirection: true,
+            alignRight: select.id === "x-axis-high",
+            label: () => {
+              const trait = state?.traits.find(item => item.id === select.value);
+              return trait ? (index === 0 ? trait.opposite || "Low" : trait.name) : "No traits";
+            }
+          }));
+        });
+      }
+      el.backgroundSelect.addEventListener("change", () => {
+        const background = el.backgroundSelect.value;
+        try {
+          applyBackground(background);
+        } catch (error) {
+          el.backgroundSelect.value = document.documentElement.dataset.background || "plain";
+          backgroundDropdown.sync();
+          el.backgroundError.textContent = `Couldn't apply the background: ${error.message}`;
+          return;
+        }
+        backgroundDropdown.sync();
+        try {
+          localStorage.setItem(BACKGROUND_KEY, background);
+          el.backgroundError.textContent = "";
+        } catch (error) {
+          el.backgroundError.textContent = `Couldn't save the background on this device: ${error.message}`;
+        }
+      });
+      loadBackground();
+      backgroundDropdown.sync();
+
+      function makeId(prefix) {
+        return `${prefix}-${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+      }
+
+      function isValidState(value) {
+        return value &&
+          Array.isArray(value.traits) &&
+          value.traits.every(trait => trait && typeof trait.id === "string" && typeof trait.name === "string" &&
+            (trait.opposite === undefined || typeof trait.opposite === "string")) &&
+          Array.isArray(value.people) &&
+          value.people.every(person =>
+            person && typeof person.id === "string" && typeof person.name === "string" &&
+            (person.color === undefined || /^#[0-9a-f]{6}$/i.test(person.color)) &&
+            person.values && typeof person.values === "object"
+          );
+      }
+
+      function normalizeState(value) {
+        if (!isValidState(value)) {
+          throw new Error("This graph's saved data is not in the expected format.");
+        }
+        const traits = value.traits.filter(trait => trait.name.trim());
+        const traitIds = new Set(traits.map(trait => trait.id));
+        const people = value.people.map((person, index) => ({
+          ...person,
+          color: person.color ?? COLORS[index % COLORS.length],
+          values: Object.fromEntries(traits.map(trait => {
+            const score = Number(person.values[trait.id]);
+            return [trait.id, Number.isFinite(score) ? Math.min(100, Math.max(0, score)) : 50];
+          }))
+        }));
+        return {
+          traits,
+          people,
+          xTrait: traitIds.has(value.xTrait) ? value.xTrait : traits[0]?.id,
+          yTrait: traitIds.has(value.yTrait) ? value.yTrait : (traits[1]?.id ?? traits[0]?.id)
+        };
+      }
+
+      function showNotice(target, message, success = false) {
+        if (target === el.appNotice && el.traitsDialog.open) target = el.traitsNotice;
+        else if (target === el.appNotice && el.newGraphDialog.open) target = el.newGraphNotice;
+        else if (target === el.appNotice && el.colorDialog.open) target = el.colorNotice;
+        target.textContent = message;
+        target.classList.toggle("notice-ok", success);
+        target.classList.add("visible");
+        const timer = target === el.authNotice ? authNoticeTimer : appNoticeTimer;
+        clearTimeout(timer);
+        const nextTimer = setTimeout(() => target.classList.remove("visible"), 7000);
+        if (target === el.authNotice) authNoticeTimer = nextTimer;
+        else appNoticeTimer = nextTimer;
+      }
+
+      function reportError(error) {
+        showNotice(el.workspace.hidden ? el.authNotice : el.appNotice, error.message);
+      }
+
+      function setSaveStatus(message, isError = false) {
+        el.saveStatus.textContent = message;
+        el.saveStatus.classList.toggle("error", isError);
+      }
+
+      function getRedirectUrl() {
+        return `${window.location.origin}${window.location.pathname}`;
+      }
+
+      function readConfig() {
+        try {
+          const value = localStorage.getItem(CONFIG_KEY);
+          return value ? JSON.parse(value) : null;
+        } catch (error) {
+          showNotice(el.authNotice, `Couldn't read the saved Supabase connection: ${error.message}`);
+          return null;
+        }
+      }
+
+      function validatePublicKey(key) {
+        if (key.startsWith("sb_secret_")) {
+          throw new Error("A secret key cannot be used in a browser. Use the publishable key.");
+        }
+        const token = key.split(".")[1];
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.replace(/-/g, "+").replace(/_/g, "/")));
+            if (payload.role === "service_role") {
+              throw new Error("A service_role key cannot be used in a browser. Use the publishable key.");
+            }
+          } catch (error) {
+            if (error.message.includes("cannot be used in a browser")) throw error;
+          }
+        }
+      }
+
+      async function connectToSupabase(config) {
+        if (!window.supabase?.createClient) {
+          throw new Error("The Supabase client could not load. Check your internet connection and reload.");
+        }
+        const parsedUrl = new URL(config.url);
+        if (!["https:", "http:"].includes(parsedUrl.protocol)) {
+          throw new Error("The Supabase project URL must use HTTP or HTTPS.");
+        }
+        validatePublicKey(config.key);
+        client = window.supabase.createClient(config.url, config.key);
+        const { data, error } = await client.auth.getSession();
+        if (error) throw error;
+        client.auth.onAuthStateChange((_event, session) => {
+          queueMicrotask(() => {
+            void applySession(session).catch(reportError);
+          });
+        });
+        await applySession(data.session);
+      }
+
+      async function applySession(session) {
+        const nextUser = session?.user ?? null;
+        if (currentUser?.id === nextUser?.id && nextUser && !el.workspace.hidden) return;
+        currentUser = nextUser;
+        if (!currentUser) {
+          if (el.traitsDialog.open) el.traitsDialog.close();
+          if (el.newGraphDialog.open) el.newGraphDialog.close();
+          if (el.renameGraphDialog.open) el.renameGraphDialog.close();
+          if (el.colorDialog.open) el.colorDialog.close();
+          el.authScreen.hidden = false;
+          el.signInForm.hidden = false;
+          el.accountBar.hidden = true;
+          el.workspace.hidden = true;
+          graphs = [];
+          activeGraphId = null;
+          activeGraphName = "";
+          state = null;
+          return;
+        }
+        el.authScreen.hidden = true;
+        el.accountBar.hidden = false;
+        el.accountEmail.textContent = currentUser.email || "Signed in";
+        el.workspace.hidden = true;
+        graphs = [];
+        activeGraphId = null;
+        state = null;
+        try {
+          await loadGraphs();
+          el.workspace.hidden = false;
+          drawChart();
+        } catch (error) {
+          el.authScreen.hidden = false;
+          el.signInForm.hidden = true;
+          showNotice(el.authNotice, `Signed in, but couldn't load your graphs: ${error.message}`);
+        }
+      }
+
+      async function loadGraphs() {
+        setSaveStatus("Loading your graphs...");
+        const { data, error } = await client
+          .from("graphs")
+          .select("id, user_id, name, data, created_at, updated_at")
+          .order("updated_at", { ascending: false });
+        if (error) throw error;
+        graphs = data;
+        if (graphs.length === 0) {
+          await createGraph("My first graph", false);
+          return;
+        }
+        activateGraph(graphs[0]);
+        setSaveStatus("Your graphs are up to date");
+      }
+
+      function activateGraph(graph) {
+        const created = new Date(graph.created_at);
+        if (!graph.created_at || Number.isNaN(created.getTime())) throw new Error("The graph's creation date is unavailable.");
+        activeGraphId = graph.id;
+        activeGraphName = graph.name;
+        el.graphCreated.dateTime = graph.created_at;
+        el.graphCreated.textContent = `Created ${created.toLocaleDateString()}`;
+        hoveredPersonId = null;
+        chartLabelHits = [];
+        state = normalizeState(graph.data);
+        renderGraphList();
+        render();
+      }
+
+      function renderGraphList() {
+        const options = graphs.map(graph => {
+          const option = document.createElement("option");
+          option.value = graph.id;
+          option.textContent = graph.name;
+          option.selected = graph.id === activeGraphId;
+          return option;
+        });
+        el.graphSelect.replaceChildren(...options);
+        graphDropdown.sync();
+      }
+
+      async function createGraph(name, flush = true) {
+        if (flush) await flushPendingSave();
+        const cleanName = name.trim().slice(0, 80) || "Untitled graph";
+        const { data, error } = await client
+          .from("graphs")
+          .insert({ user_id: currentUser.id, name: cleanName, data: initialState() })
+          .select("id, user_id, name, data, created_at, updated_at")
+          .single();
+        if (error) throw error;
+        graphs.unshift(data);
+        activateGraph(data);
+        setSaveStatus("New graph created.");
+      }
+
+      async function persistSnapshot(snapshot) {
+        const { data, error } = await client
+          .from("graphs")
+          .update({ name: snapshot.name, data: snapshot.data, updated_at: new Date().toISOString() })
+          .eq("id", snapshot.id)
+          .eq("user_id", snapshot.userId)
+          .select("id, user_id, name, data, created_at, updated_at")
+          .single();
+        if (error) throw error;
+        const index = graphs.findIndex(graph => graph.id === data.id);
+        if (index >= 0) graphs[index] = data;
+        if (activeGraphId === snapshot.id && snapshot.version === saveVersion) {
+          setSaveStatus("Saved to your account.");
+          renderGraphList();
+        }
+      }
+
+      function enqueueSave(snapshot) {
+        const task = saveQueue.catch(() => {}).then(() => persistSnapshot(snapshot));
+        saveQueue = task;
+        return task;
+      }
+
+      function scheduleSave() {
+        if (!currentUser || !activeGraphId) return;
+        saveVersion += 1;
+        pendingSave = {
+          id: activeGraphId,
+          userId: currentUser.id,
+          name: activeGraphName,
+          data: JSON.parse(JSON.stringify(state)),
+          version: saveVersion
+        };
+        setSaveStatus("Saving...");
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          const snapshot = pendingSave;
+          pendingSave = null;
+          saveTimer = null;
+          void enqueueSave(snapshot).catch(error => {
+            if (activeGraphId === snapshot.id) setSaveStatus(`Save failed: ${error.message}`, true);
+            showNotice(el.appNotice, `Couldn't save this graph: ${error.message}`);
+          });
+        }, 500);
+      }
+
+      async function flushPendingSave() {
+        if (saveTimer) {
+          clearTimeout(saveTimer);
+          saveTimer = null;
+          const snapshot = pendingSave;
+          pendingSave = null;
+          if (snapshot) await enqueueSave(snapshot);
+        }
+        await saveQueue;
+      }
+
+      function traitLabel(trait) {
+        return `${trait.opposite || "Low"} to ${trait.name}`;
+      }
+
+      function hsvToHex(hue, saturation, value) {
+        const chroma = value * saturation;
+        const x = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+        const sector = Math.floor(hue / 60);
+        const channels = [[chroma, x, 0], [x, chroma, 0], [0, chroma, x],
+          [0, x, chroma], [x, 0, chroma], [chroma, 0, x]][sector];
+        return "#" + channels.map(channel =>
+          Math.round((channel + value - chroma) * 255).toString(16).padStart(2, "0")
+        ).join("");
+      }
+
+      function randomPersonColor() {
+        return hsvToHex(Math.random() * 360, .8, .85);
+      }
+
+      function updateColorPicker(updateColor = true) {
+        const angle = colorHue * Math.PI / 180;
+        el.colorMarker.style.left = `${50 + 50 * colorSaturation * Math.sin(angle)}%`;
+        el.colorMarker.style.top = `${50 - 50 * colorSaturation * Math.cos(angle)}%`;
+        el.colorBrightness.value = String(Math.round(colorValue * 100));
+        if (updateColor) colorDraft = hsvToHex(colorHue, colorSaturation, colorValue);
+        el.colorPreview.style.backgroundColor = colorDraft;
+        el.colorStatus.textContent = `Hue ${Math.round(colorHue)} degrees, saturation ${Math.round(colorSaturation * 100)} percent, brightness ${Math.round(colorValue * 100)} percent`;
+      }
+
+      function setColorFromHex(hex) {
+        const [red, green, blue] = [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255);
+        const max = Math.max(red, green, blue);
+        const delta = max - Math.min(red, green, blue);
+        colorValue = max;
+        colorSaturation = max === 0 ? 0 : delta / max;
+        if (delta === 0) colorHue = 0;
+        else if (max === red) colorHue = 60 * (((green - blue) / delta + 6) % 6);
+        else if (max === green) colorHue = 60 * ((blue - red) / delta + 2);
+        else colorHue = 60 * ((red - green) / delta + 4);
+        colorDraft = hex.toLowerCase();
+        updateColorPicker(false);
+      }
+
+      function pickWheelColor(event) {
+        const bounds = el.colorWheel.getBoundingClientRect();
+        const x = (event.clientX - bounds.left - bounds.width / 2) / (bounds.width / 2);
+        const y = (event.clientY - bounds.top - bounds.height / 2) / (bounds.height / 2);
+        colorSaturation = Math.min(1, Math.hypot(x, y));
+        if (colorSaturation > 0) colorHue = (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360;
+        updateColorPicker();
+      }
+
+      function openColorDialog(person, button) {
+        colorPerson = person;
+        colorButton = button;
+        setColorFromHex(person ? person.color : newPersonColor);
+        el.colorNotice.classList.remove("visible");
+        el.colorDialog.showModal();
+      }
+
+      function createOption(trait, selected) {
+        const option = document.createElement("option");
+        option.value = trait.id;
+        option.textContent = traitLabel(trait);
+        option.selected = trait.id === selected;
+        return option;
+      }
+
+      function renderAxes() {
+        state.xTrait = state.traits.some(trait => trait.id === state.xTrait) ? state.xTrait : state.traits[0]?.id;
+        state.yTrait = state.traits.some(trait => trait.id === state.yTrait) ? state.yTrait : state.traits[1]?.id ?? state.traits[0]?.id;
+        for (const [controls, selected] of [[el.xAxes, state.xTrait], [el.yAxes, state.yTrait]]) {
+          const trait = state.traits.find(item => item.id === selected);
+          controls.forEach(select => {
+            select.replaceChildren(...state.traits.map(item => createOption(item, selected)));
+            select.value = selected ?? "";
+            select.disabled = !trait;
+            axisDropdowns.get(select).sync();
+          });
+        }
+      }
+
+      function renderPeople() {
+        const count = state.people.length;
+        el.peopleCount.textContent = `${count} ${count === 1 ? "person" : "people"}`;
+        const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
+        const scrollTop = el.peopleList.scrollTop;
+        el.peopleList.replaceChildren();
+        for (const [personIndex, person] of [...state.people.entries()].reverse()) {
+          const card = document.createElement("details");
+          card.className = "person-card";
+          card.dataset.personId = person.id;
+          card.open = openPeople.has(person.id);
+          const summary = document.createElement("summary");
+          summary.className = "person-summary";
+          summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
+          const summaryName = document.createElement("span");
+          summaryName.className = "summary-name";
+          const caret = document.createElement("span");
+          caret.className = "person-caret";
+          caret.setAttribute("aria-hidden", "true");
+          const nameInput = document.createElement("input");
+          nameInput.className = "person-name";
+          nameInput.type = "text";
+          nameInput.maxLength = 40;
+          nameInput.placeholder = `Person ${personIndex + 1}`;
+          nameInput.value = person.name;
+          nameInput.setAttribute("aria-label", `Name for person ${personIndex + 1}`);
+          nameInput.addEventListener("input", () => {
+            person.name = nameInput.value;
+            summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
+            remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
+            color.setAttribute("aria-label", `Change color for ${person.name || "person"}`);
+            for (const slider of card.querySelectorAll("input[type=range]")) {
+              const trait = state.traits.find(item => item.id === slider.dataset.traitId);
+              slider.setAttribute("aria-label", `${traitLabel(trait)} score for ${person.name || "person"}`);
+            }
+            drawChart();
+            scheduleSave();
+          });
+          const remove = document.createElement("button");
+          remove.className = "icon-button";
+          remove.type = "button";
+          remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
+          remove.textContent = "Delete";
+          remove.addEventListener("click", event => {
+            event.stopPropagation();
+            state.people = state.people.filter(item => item.id !== person.id);
+            render();
+            scheduleSave();
+          });
+          nameInput.addEventListener("click", event => event.stopPropagation());
+          const color = document.createElement("button");
+          color.className = "person-color";
+          color.type = "button";
+          color.style.backgroundColor = person.color;
+          color.setAttribute("aria-label", `Change color for ${person.name || "person"}`);
+          color.addEventListener("click", event => {
+            event.stopPropagation();
+            openColorDialog(person, color);
+          });
+          for (const control of [nameInput, color, remove]) {
+            control.addEventListener("keydown", event => event.stopPropagation());
+          }
+          summaryName.append(caret, nameInput, color);
+          summary.append(summaryName, remove);
+
+          const traitList = document.createElement("div");
+          traitList.className = "trait-list";
+          for (const trait of state.traits) {
+            const row = document.createElement("label");
+            row.className = "trait-row";
+            const lowLabel = document.createElement("span");
+            lowLabel.textContent = trait.opposite || "Low";
+            const slider = document.createElement("input");
+            slider.type = "range";
+            slider.min = "0";
+            slider.max = "100";
+            slider.step = "1";
+            slider.value = String(person.values[trait.id] ?? 50);
+            slider.dataset.traitId = trait.id;
+            slider.setAttribute("aria-label", `${traitLabel(trait)} score for ${person.name || "person"}`);
+            const highLabel = document.createElement("span");
+            highLabel.textContent = trait.name;
+            slider.addEventListener("input", () => {
+              person.values[trait.id] = Number(slider.value);
+              drawChart();
+              scheduleSave();
+            });
+            row.append(lowLabel, slider, highLabel);
+            traitList.append(row);
+          }
+          card.append(summary, traitList);
+          el.peopleList.append(card);
+        }
+        el.peopleList.scrollTop = scrollTop;
+      }
+
+      function renderDimensions() {
+        el.dimensions.replaceChildren();
+        for (const trait of traitsDraft ?? state.traits) {
+          const row = document.createElement("div");
+          row.className = "dimension-row";
+          const low = document.createElement("input");
+          low.type = "text";
+          low.maxLength = 32;
+          low.value = trait.opposite || "";
+          low.placeholder = "Low end";
+          low.setAttribute("aria-label", `Low end for ${trait.name}`);
+          low.addEventListener("input", () => { trait.opposite = low.value; });
+          const name = document.createElement("input");
+          name.type = "text";
+          name.maxLength = 32;
+          name.value = trait.name;
+          name.placeholder = "High end";
+          name.setAttribute("aria-label", `High end for ${trait.name}`);
+          name.addEventListener("input", () => {
+            trait.name = name.value;
+            name.setAttribute("aria-label", `High end for ${trait.name}`);
+            low.setAttribute("aria-label", `Low end for ${trait.name}`);
+            remove.setAttribute("aria-label", `Remove ${trait.name} trait`);
+            swap.setAttribute("aria-label", `Swap ends for ${trait.name || "trait"}`);
+          });
+          const swap = document.createElement("button");
+          swap.className = "swap-trait";
+          swap.type = "button";
+          swap.textContent = "⇄";
+          swap.title = "Swap trait ends";
+          swap.setAttribute("aria-label", `Swap ends for ${trait.name}`);
+          swap.addEventListener("click", () => swapTraitFields(low, name));
+          const remove = document.createElement("button");
+          remove.className = "icon-button";
+          remove.type = "button";
+          remove.setAttribute("aria-label", `Remove ${trait.name} trait`);
+          remove.textContent = "Delete";
+          remove.addEventListener("click", () => {
+            traitsDraft = traitsDraft.filter(item => item.id !== trait.id);
+            renderDimensions();
+          });
+          row.append(low, swap, name, remove);
+          el.dimensions.append(row);
+        }
+      }
+
+      function swapTraitFields(low, high) {
+        [low.value, high.value] = [high.value, low.value];
+        low.dispatchEvent(new Event("input", { bubbles: true }));
+        high.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+
+      function chartBounds(width, height) {
+        const inset = parseFloat(getComputedStyle(el.chart).getPropertyValue("--plot-inset"));
+        return { left: inset, top: inset, right: width - inset, bottom: height - inset };
+      }
+
+      function chartPoint(person, bounds) {
+        return {
+          x: bounds.left + Number(person.values[state.xTrait] ?? 50) / 100 * (bounds.right - bounds.left),
+          y: bounds.bottom - Number(person.values[state.yTrait] ?? 50) / 100 * (bounds.bottom - bounds.top)
+        };
+      }
+
+      function pointerPosition(event) {
+        const bounds = el.chart.getBoundingClientRect();
+        return { x: event.clientX - bounds.left, y: event.clientY - bounds.top, width: bounds.width, height: bounds.height };
+      }
+
+      function personAtPoint(point) {
+        if (!state || !state.xTrait || !state.yTrait) return null;
+        const bounds = chartBounds(point.width, point.height);
+        for (let i = state.people.length - 1; i >= 0; i--) {
+          const position = chartPoint(state.people[i], bounds);
+          if (Math.hypot(point.x - position.x, point.y - position.y) <= 12) return state.people[i];
+        }
+        return null;
+      }
+
+      function labelAtPoint(point) {
+        let label = null;
+        let closestDistance = Infinity;
+        for (let i = chartLabelHits.length - 1; i >= 0; i--) {
+          const hit = chartLabelHits[i];
+          if (point.x < hit.left || point.x > hit.right || point.y < hit.top || point.y > hit.bottom) continue;
+          const distance = Math.hypot(point.x - (hit.left + hit.right) / 2, point.y - (hit.top + hit.bottom) / 2);
+          if (distance < closestDistance) {
+            label = hit;
+            closestDistance = distance;
+          }
+        }
+        return label;
+      }
+
+      function updatePersonSliders(person) {
+        const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
+        if (!card) return;
+        for (const slider of card.querySelectorAll("input[type=range]")) {
+          slider.value = String(person.values[slider.dataset.traitId]);
+        }
+      }
+
+      el.chart.addEventListener("pointerdown", event => {
+        if (!event.isPrimary || event.button !== 0 || chartDrag) return;
+        const point = pointerPosition(event);
+        const person = personAtPoint(point);
+        if (!person) return;
+        const position = chartPoint(person, chartBounds(point.width, point.height));
+        chartDrag = {
+          pointerId: event.pointerId,
+          graphId: activeGraphId,
+          personId: person.id,
+          xTrait: state.xTrait,
+          yTrait: state.yTrait,
+          offsetX: point.x - position.x,
+          offsetY: point.y - position.y
+        };
+        el.chart.setPointerCapture(event.pointerId);
+        el.chart.style.cursor = "move";
+        event.preventDefault();
+      });
+
+      el.chart.addEventListener("pointermove", event => {
+        const point = pointerPosition(event);
+        if (!chartDrag) {
+          const label = labelAtPoint(point);
+          const pointPerson = personAtPoint(point);
+          const personId = pointPerson?.id ?? label?.personId ?? null;
+          if (personId !== hoveredPersonId) {
+            hoveredPersonId = personId;
+            drawChart();
+          }
+          el.chart.style.cursor = pointPerson ? "move" : "";
+          return;
+        }
+        if (event.pointerId !== chartDrag.pointerId) return;
+        if (!state || activeGraphId !== chartDrag.graphId ||
+            state.xTrait !== chartDrag.xTrait || state.yTrait !== chartDrag.yTrait) return;
+        const person = state.people.find(item => item.id === chartDrag.personId);
+        if (!person) return;
+        const bounds = chartBounds(point.width, point.height);
+        const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
+        const x = (point.x - chartDrag.offsetX - bounds.left) / (bounds.right - bounds.left) * 100;
+        const y = (bounds.bottom - point.y + chartDrag.offsetY) / (bounds.bottom - bounds.top) * 100;
+        if (chartDrag.xTrait === chartDrag.yTrait) {
+          person.values[chartDrag.xTrait] = clamp((x + y) / 2);
+        } else {
+          person.values[chartDrag.xTrait] = clamp(x);
+          person.values[chartDrag.yTrait] = clamp(y);
+        }
+        updatePersonSliders(person);
+        drawChart();
+        scheduleSave();
+      });
+
+      function endChartDrag(event) {
+        if (!chartDrag || event.pointerId !== chartDrag.pointerId) return;
+        chartDrag = null;
+        hoveredPersonId = null;
+        el.chart.style.cursor = event.type === "pointerup" && personAtPoint(pointerPosition(event)) ? "move" : "";
+        drawChart();
+      }
+
+      el.chart.addEventListener("pointerleave", () => {
+        if (!chartDrag) {
+          el.chart.style.cursor = "";
+          if (hoveredPersonId !== null) {
+            hoveredPersonId = null;
+            drawChart();
+          }
+        }
+      });
+      el.chart.addEventListener("pointerup", endChartDrag);
+      el.chart.addEventListener("pointercancel", endChartDrag);
+      el.chart.addEventListener("lostpointercapture", endChartDrag);
+      el.chart.addEventListener("dblclick", event => {
+        const point = pointerPosition(event);
+        const label = labelAtPoint(point);
+        const pointPerson = personAtPoint(point);
+        const personId = pointPerson?.id ?? label?.personId;
+        if (!personId) return;
+        const card = [...el.peopleList.children].find(item => item.dataset.personId === personId);
+        if (!card) return;
+        card.open = true;
+        el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
+      });
+
+      function drawChart() {
+        const canvas = el.chart;
+        const bounds = canvas.getBoundingClientRect();
+        if (!state || bounds.width === 0) {
+          chartLabelHits = [];
+          return;
+        }
+        const width = bounds.width;
+        const height = width * 445 / 620;
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.round(width * ratio);
+        canvas.height = Math.round(height * ratio);
+        const context = canvas.getContext("2d");
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        context.clearRect(0, 0, width, height);
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, width, height);
+
+        const { left, top, right, bottom } = chartBounds(width, height);
+        const plotWidth = right - left;
+        const plotHeight = bottom - top;
+        context.font = "12px serif";
+        context.textBaseline = "middle";
+        context.lineWidth = 1;
+        const midX = (left + right) / 2;
+        const midY = (top + bottom) / 2;
+        const personDotRadius = 6;
+        const personDotBorderWidth = 2;
+        context.strokeStyle = "#000";
+        context.beginPath();
+        context.moveTo(left, midY);
+        context.lineTo(right, midY);
+        context.moveTo(midX, top);
+        context.lineTo(midX, bottom);
+        context.stroke();
+        context.fillStyle = "#fff";
+        context.beginPath();
+        context.arc(midX, midY, personDotRadius - personDotBorderWidth / 2, 0, Math.PI * 2);
+        context.fill();
+
+        context.font = "bold 12px serif";
+        context.textAlign = "left";
+        const points = state.people.map(person => chartPoint(person, { left, top, right, bottom }));
+        const labels = state.people.map((person, index) => {
+          const { x, y } = points[index];
+          const text = person.name.trim() || `Person ${index + 1}`;
+          const metrics = context.measureText(text);
+          const labelOnLeft = x > right - 90;
+          const labelX = labelOnLeft ? x - 10 - metrics.width : x + 10;
+          const labelY = y - 9;
+          return {
+            text, x: labelX, y: labelY,
+            hit: {
+              personId: person.id,
+              left: labelX - metrics.actualBoundingBoxLeft - 3,
+              right: labelX + metrics.actualBoundingBoxRight + 3,
+              top: labelY - metrics.actualBoundingBoxAscent - 3,
+              bottom: labelY + metrics.actualBoundingBoxDescent + 3
+            }
+          };
+        });
+        chartLabelHits = labels.map(label => label.hit);
+        const hoveredIndex = state.people.findIndex(person => person.id === hoveredPersonId);
+        state.people.forEach((person, index) => {
+          const { x, y } = points[index];
+          context.globalAlpha = hoveredIndex !== -1 && index !== hoveredIndex ? 0.4 : 1;
+          context.fillStyle = person.color;
+          context.strokeStyle = "#fff";
+          context.lineWidth = personDotBorderWidth;
+          context.beginPath();
+          context.arc(x, y, personDotRadius, 0, Math.PI * 2);
+          context.fill();
+          context.stroke();
+        });
+        context.globalAlpha = 1;
+        const drawLabel = (index, hovered = false) => {
+          const { text, x: labelX, y: labelY, hit } = labels[index];
+          context.globalAlpha = hoveredIndex !== -1 && !hovered ? 0.4 : 1;
+          context.lineWidth = 3;
+          context.strokeStyle = "#fff";
+          if (hovered) {
+            context.fillStyle = "#fff";
+            context.fillRect(hit.left, hit.top, hit.right - hit.left, hit.bottom - hit.top);
+          }
+          context.strokeText(text, labelX, labelY);
+          context.fillStyle = "#000";
+          context.fillText(text, labelX, labelY);
+        };
+        state.people.forEach((_, index) => {
+          if (index !== hoveredIndex) drawLabel(index);
+        });
+        if (hoveredIndex !== -1) {
+          drawLabel(hoveredIndex, true);
+          const { x, y } = points[hoveredIndex];
+          context.strokeStyle = "#333";
+          context.lineWidth = 1.5;
+          context.lineCap = "round";
+          context.setLineDash([0, 3.5]);
+          context.beginPath();
+          context.arc(x, y, personDotRadius + 3, 0, Math.PI * 2);
+          context.stroke();
+          context.setLineDash([]);
+          context.lineCap = "butt";
+        }
+        context.globalAlpha = 1;
+      }
+
+      function render() {
+        renderAxes();
+        renderPeople();
+        renderDimensions();
+        drawChart();
+      }
+
+      function setButtonsDisabled(disabled) {
+        el.emailSignIn.disabled = disabled;
+        el.googleSignIn.disabled = disabled;
+      }
+
+      el.connectionForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        const url = el.projectUrl.value.trim().replace(/\/+$/, "");
+        const key = el.publicKey.value.trim();
+        try {
+          new URL(url);
+          validatePublicKey(key);
+          localStorage.setItem(CONFIG_KEY, JSON.stringify({ url, key }));
+          el.connectionSummary.textContent = "Update Supabase connection";
+          el.connectionDetails.open = false;
+          await connectToSupabase({ url, key });
+          el.connectionDetails.hidden = true;
+          showNotice(el.authNotice, "Supabase connection saved.", true);
+        } catch (error) {
+          showNotice(el.authNotice, `Couldn't connect to Supabase: ${error.message}`);
+        }
+      });
+
+      el.signInForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (!client) {
+          showNotice(el.authNotice, "Set up your Supabase connection first.");
+          return;
+        }
+        setButtonsDisabled(true);
+        try {
+          const { error } = await client.auth.signInWithOtp({
+            email: el.authEmail.value.trim(),
+            options: { emailRedirectTo: getRedirectUrl() }
+          });
+          if (error) throw error;
+          showNotice(el.authNotice, "Check your inbox for your sign-in link.", true);
+        } catch (error) {
+          showNotice(el.authNotice, `Email sign-in failed: ${error.message}`);
+        } finally {
+          setButtonsDisabled(false);
+        }
+      });
+
+      el.googleSignIn.addEventListener("click", async () => {
+        if (!client) {
+          showNotice(el.authNotice, "Set up your Supabase connection first.");
+          return;
+        }
+        setButtonsDisabled(true);
+        try {
+          const { error } = await client.auth.signInWithOAuth({
+            provider: "google",
+            options: { redirectTo: getRedirectUrl() }
+          });
+          if (error) throw error;
+        } catch (error) {
+          showNotice(el.authNotice, `Google sign-in failed: ${error.message}`);
+          setButtonsDisabled(false);
+        }
+      });
+
+      el.signOut.addEventListener("click", async () => {
+        try {
+          await flushPendingSave();
+          const { error } = await client.auth.signOut();
+          if (error) throw error;
+        } catch (error) {
+          showNotice(el.appNotice, `Couldn't safely sign out: ${error.message}`);
+        }
+      });
+
+      el.graphSelect.addEventListener("change", async () => {
+        try {
+          await flushPendingSave();
+          const graph = graphs.find(item => item.id === el.graphSelect.value);
+          if (graph) activateGraph(graph);
+        } catch (error) {
+          showNotice(el.appNotice, `Couldn't save before switching graphs: ${error.message}`);
+          renderGraphList();
+        }
+      });
+
+      el.renameGraph.addEventListener("click", () => {
+        el.renameGraphName.value = activeGraphName;
+        el.renameGraphNotice.classList.remove("visible");
+        el.renameGraphDialog.showModal();
+        el.renameGraphName.select();
+      });
+
+      el.cancelRenameGraph.addEventListener("click", () => el.renameGraphDialog.close());
+      el.renameGraphDialog.addEventListener("cancel", event => {
+        if (renamingGraph) event.preventDefault();
+      });
+      el.renameGraphForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (renamingGraph) return;
+        const name = el.renameGraphName.value.trim();
+        if (!name) {
+          showNotice(el.renameGraphNotice, "A graph needs a name.");
+          return;
+        }
+        if (name === activeGraphName) {
+          el.renameGraphDialog.close();
+          return;
+        }
+        renamingGraph = true;
+        el.saveGraphName.disabled = true;
+        el.cancelRenameGraph.disabled = true;
+        const previousName = activeGraphName;
+        try {
+          activeGraphName = name;
+          scheduleSave();
+          await flushPendingSave();
+          el.renameGraphDialog.close();
+        } catch (error) {
+          activeGraphName = previousName;
+          scheduleSave();
+          setSaveStatus(`Save failed: ${error.message}`, true);
+          showNotice(el.renameGraphNotice, `Couldn't rename this graph: ${error.message}`);
+        } finally {
+          renamingGraph = false;
+          el.saveGraphName.disabled = false;
+          el.cancelRenameGraph.disabled = false;
+        }
+      });
+
+      el.newGraph.addEventListener("click", () => {
+        el.newGraphName.value = "Untitled graph";
+        el.newGraphNotice.classList.remove("visible");
+        el.newGraphDialog.showModal();
+        el.newGraphName.select();
+      });
+
+      el.cancelNewGraph.addEventListener("click", () => el.newGraphDialog.close());
+      el.newGraphDialog.addEventListener("cancel", event => {
+        if (creatingGraph) event.preventDefault();
+      });
+      el.newGraphForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (creatingGraph) return;
+        creatingGraph = true;
+        el.createGraph.disabled = true;
+        el.cancelNewGraph.disabled = true;
+        try {
+          await createGraph(el.newGraphName.value);
+          el.newGraphDialog.close();
+        } catch (error) {
+          showNotice(el.appNotice, `Couldn't create a graph: ${error.message}`);
+        } finally {
+          creatingGraph = false;
+          el.createGraph.disabled = false;
+          el.cancelNewGraph.disabled = false;
+        }
+      });
+
+      el.deleteGraph.addEventListener("click", () => {
+        if (!activeGraphId) return;
+        deleteTargetId = activeGraphId;
+        el.deleteGraphMessage.textContent = `Delete "${activeGraphName}" and all its people? This cannot be undone.`;
+        el.deleteGraphNotice.classList.remove("visible");
+        el.deleteGraphDialog.showModal();
+      });
+
+      el.cancelDeleteGraph.addEventListener("click", () => {
+        if (!deletingGraph) el.deleteGraphDialog.close();
+      });
+      el.deleteGraphDialog.addEventListener("cancel", event => {
+        if (deletingGraph) event.preventDefault();
+      });
+      el.deleteGraphForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (deletingGraph) return;
+        if (!deleteTargetId || activeGraphId !== deleteTargetId) {
+          showNotice(el.deleteGraphNotice, "The selected graph changed. Close this dialog and try again.");
+          return;
+        }
+        deletingGraph = true;
+        el.confirmDeleteGraph.disabled = true;
+        el.cancelDeleteGraph.disabled = true;
+        let deleted = false;
+        try {
+          await flushPendingSave();
+          const { error } = await client.from("graphs").delete()
+            .eq("id", deleteTargetId)
+            .eq("user_id", currentUser.id);
+          if (error) throw error;
+          deleted = true;
+          graphs = graphs.filter(graph => graph.id !== deleteTargetId);
+          activeGraphId = null;
+          if (graphs.length) {
+            activateGraph(graphs[0]);
+          } else {
+            await createGraph("My first graph", false);
+          }
+          setSaveStatus("Graph deleted.");
+          el.deleteGraphDialog.close();
+        } catch (error) {
+          if (deleted && !graphs.length) {
+            el.deleteGraphDialog.close();
+            el.workspace.hidden = true;
+            el.authScreen.hidden = false;
+            el.signInForm.hidden = true;
+            showNotice(el.authNotice, `Graph deleted, but couldn't create a replacement: ${error.message}. Reload to try again.`);
+          } else {
+            showNotice(el.deleteGraphNotice, `Couldn't delete this graph: ${error.message}`);
+          }
+        } finally {
+          deletingGraph = false;
+          el.confirmDeleteGraph.disabled = false;
+          el.cancelDeleteGraph.disabled = false;
+        }
+      });
+
+      el.newPersonColor.addEventListener("click", () => openColorDialog(null, el.newPersonColor));
+      el.colorWheel.addEventListener("pointerdown", event => {
+        if (!event.isPrimary || event.button !== 0 || colorDragging) return;
+        colorDragging = true;
+        el.colorWheel.setPointerCapture(event.pointerId);
+        pickWheelColor(event);
+      });
+      el.colorWheel.addEventListener("pointermove", event => {
+        if (colorDragging && el.colorWheel.hasPointerCapture(event.pointerId)) pickWheelColor(event);
+      });
+      el.colorWheel.addEventListener("lostpointercapture", () => { colorDragging = false; });
+      el.colorWheel.addEventListener("keydown", event => {
+        switch (event.key) {
+          case "ArrowLeft": colorHue = (colorHue + 355) % 360; break;
+          case "ArrowRight": colorHue = (colorHue + 5) % 360; break;
+          case "ArrowUp": colorSaturation = Math.min(1, colorSaturation + .05); break;
+          case "ArrowDown": colorSaturation = Math.max(0, colorSaturation - .05); break;
+          default: return;
+        }
+        event.preventDefault();
+        updateColorPicker();
+      });
+      el.colorBrightness.addEventListener("input", () => {
+        colorValue = Number(el.colorBrightness.value) / 100;
+        updateColorPicker();
+      });
+      el.cancelColor.addEventListener("click", () => el.colorDialog.close());
+      el.colorDialog.addEventListener("cancel", event => {
+        if (savingColor) event.preventDefault();
+      });
+      el.colorForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (savingColor) return;
+        const color = colorDraft;
+        if (!colorPerson) {
+          newPersonColor = color.toLowerCase();
+          el.newPersonColor.style.backgroundColor = newPersonColor;
+          el.colorDialog.close();
+          return;
+        }
+        if (color.toLowerCase() === colorPerson.color.toLowerCase()) {
+          el.colorDialog.close();
+          return;
+        }
+        const previousColor = colorPerson.color;
+        savingColor = true;
+        el.saveColor.disabled = true;
+        el.cancelColor.disabled = true;
+        el.colorFields.inert = true;
+        try {
+          colorPerson.color = color.toLowerCase();
+          scheduleSave();
+          await flushPendingSave();
+          colorButton.style.backgroundColor = colorPerson.color;
+          drawChart();
+          el.colorDialog.close();
+        } catch (error) {
+          colorPerson.color = previousColor;
+          scheduleSave();
+          setSaveStatus(`Save failed: ${error.message}`, true);
+          showNotice(el.colorNotice, `Couldn't save this color: ${error.message}`);
+        } finally {
+          savingColor = false;
+          el.saveColor.disabled = false;
+          el.cancelColor.disabled = false;
+          el.colorFields.inert = false;
+        }
+      });
+
+      for (const [controls, axis] of [[el.xAxes, "xTrait"], [el.yAxes, "yTrait"]]) {
+        for (const select of controls) {
+          select.addEventListener("change", () => {
+            state[axis] = select.value;
+            renderAxes();
+            drawChart();
+            scheduleSave();
+          });
+        }
+      }
+
+      el.openTraits.addEventListener("click", () => {
+        el.traitsNotice.classList.remove("visible");
+        traitsDraft = state.traits.map(trait => ({ ...trait, opposite: trait.opposite || undefined }));
+        el.newTraitLow.value = "";
+        el.newTraitName.value = "";
+        renderDimensions();
+        el.traitsDialog.showModal();
+      });
+
+      el.cancelTraits.addEventListener("click", () => el.traitsDialog.close());
+      el.traitsDialog.addEventListener("cancel", event => {
+        if (savingTraits) event.preventDefault();
+      });
+      el.traitsDialog.addEventListener("close", () => {
+        traitsDraft = null;
+        el.newTraitLow.value = "";
+        el.newTraitName.value = "";
+      });
+      el.saveTraits.addEventListener("click", async () => {
+        if (savingTraits) return;
+        if (el.newTraitLow.value.trim() || el.newTraitName.value.trim()) {
+          showNotice(el.traitsNotice, "Add the new trait or clear its fields before saving.");
+          return;
+        }
+        const names = new Set();
+        for (const trait of traitsDraft) {
+          const name = trait.name.trim();
+          if (!name || (trait.opposite !== undefined && !trait.opposite.trim())) {
+            showNotice(el.traitsNotice, "Each trait needs a name and a low end.");
+            return;
+          }
+          if (names.has(name.toLowerCase())) {
+            showNotice(el.traitsNotice, "Each trait needs a unique name.");
+            return;
+          }
+          names.add(name.toLowerCase());
+        }
+        const previousState = state;
+        state = normalizeState({
+          ...state,
+          traits: traitsDraft.map(trait => ({
+            ...trait,
+            name: trait.name.trim(),
+            ...(trait.opposite === undefined ? {} : { opposite: trait.opposite.trim() })
+          }))
+        });
+        savingTraits = true;
+        el.saveTraits.disabled = true;
+        el.cancelTraits.disabled = true;
+        el.dimensions.inert = true;
+        el.addTraitForm.inert = true;
+        try {
+          scheduleSave();
+          await flushPendingSave();
+          el.traitsDialog.close();
+          render();
+        } catch (error) {
+          state = previousState;
+          scheduleSave();
+          setSaveStatus(`Save failed: ${error.message}`, true);
+          showNotice(el.traitsNotice, `Couldn't save traits: ${error.message}`);
+        } finally {
+          savingTraits = false;
+          el.saveTraits.disabled = false;
+          el.cancelTraits.disabled = false;
+          el.dimensions.inert = false;
+          el.addTraitForm.inert = false;
+        }
+      });
+
+      el.addPersonForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const name = el.newPersonName.value.trim();
+        if (!name) {
+          el.newPersonName.focus();
+          showNotice(el.appNotice, "Enter a name before adding a person.");
+          return;
+        }
+        const values = Object.fromEntries(state.traits.map(trait => [trait.id, 50]));
+        state.people.push({ id: makeId("person"), name, color: newPersonColor, values });
+        el.newPersonName.value = "";
+        newPersonColor = randomPersonColor();
+        el.newPersonColor.style.backgroundColor = newPersonColor;
+        render();
+        el.peopleList.firstElementChild.open = true;
+        el.peopleList.scrollTop = 0;
+        scheduleSave();
+        el.newPersonName.focus();
+      });
+
+      el.swapNewTrait.addEventListener("click", () => swapTraitFields(el.newTraitLow, el.newTraitName));
+      el.addTraitForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const opposite = el.newTraitLow.value.trim();
+        const name = el.newTraitName.value.trim();
+        if (!opposite || !name) {
+          (opposite ? el.newTraitName : el.newTraitLow).focus();
+          showNotice(el.appNotice, "Enter both ends of the trait.");
+          return;
+        }
+        if (traitsDraft.some(trait => trait.name.trim().toLowerCase() === name.toLowerCase())) {
+          el.newTraitName.focus();
+          showNotice(el.appNotice, "That trait already exists.");
+          return;
+        }
+        const trait = { id: makeId("trait"), name, opposite };
+        traitsDraft.push(trait);
+        el.newTraitName.value = "";
+        el.newTraitLow.value = "";
+        renderDimensions();
+      });
+
+      for (const dialog of document.querySelectorAll("dialog")) {
+        let backdropPressed = false;
+        const isBackdrop = event => {
+          const bounds = dialog.getBoundingClientRect();
+          return event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right ||
+            event.clientY < bounds.top || event.clientY > bounds.bottom);
+        };
+        dialog.addEventListener("pointerdown", event => {
+          backdropPressed = event.button === 0 && isBackdrop(event);
+        });
+        dialog.addEventListener("pointercancel", () => { backdropPressed = false; });
+        dialog.addEventListener("click", event => {
+          const dismiss = backdropPressed && isBackdrop(event);
+          backdropPressed = false;
+          if (dismiss && dialog.dispatchEvent(new Event("cancel", { cancelable: true }))) dialog.close();
+        });
+      }
+
+      window.addEventListener("resize", drawChart);
+      new ResizeObserver(drawChart).observe(el.chart);
+
+      async function initialize() {
+        const config = readConfig() ?? DEFAULT_CONFIG;
+        el.projectUrl.value = config.url ?? "";
+        el.publicKey.value = config.key ?? "";
+        el.connectionSummary.textContent = "Update Supabase connection";
+        el.connectionDetails.open = false;
+        try {
+          await connectToSupabase(config);
+        } catch (error) {
+          reportError(error);
+          el.connectionDetails.hidden = false;
+          el.connectionDetails.open = true;
+        }
+      }
+
+      void initialize();
+    </script>
+  </body>
+</html>
