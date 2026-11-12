@@ -163,7 +163,8 @@
       .person-dates .graph-badge { text-align: center; white-space: normal; overflow-wrap: anywhere; }
       .trait-list { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) minmax(0, max-content); column-gap: .5em; margin: .5em 0 0 calc(10px + .4rem); }
       .trait-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
-      .trait-row input { width: 100%; min-width: 0; margin: 0; }
+      .trait-row input { width: 100%; min-width: 0; margin: 0; accent-color: #767676; }
+      .trait-row input:focus { accent-color: #00f; }
       .trait-row span { overflow-wrap: anywhere; }
       .trait-row span:last-child { text-align: right; }
       .dimension-row { margin: .5em 0; }
@@ -336,6 +337,7 @@
                   <button class="person-color" id="new-person-color" type="button" aria-label="Choose color for new person"></button>
                   <button class="button" type="submit" aria-label="Add person">Add</button>
                 </form>
+                <span id="trait-slider-instructions" class="visually-hidden">Use up and down arrows to move between trait sliders, and left and right arrows to adjust the score.</span>
                 <div class="people-list-wrap" id="people-list-wrap">
                   <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
                   <div class="people-scroll-hint" id="people-scroll-hint" hidden>Scroll for more</div>
@@ -1550,6 +1552,15 @@
 
           const traitList = document.createElement("div");
           traitList.className = "trait-list";
+          traitList.addEventListener("keydown", event => {
+            if ((event.key !== "ArrowUp" && event.key !== "ArrowDown") ||
+                event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+            const sliders = [...traitList.querySelectorAll('input[type="range"]')];
+            const index = sliders.indexOf(event.target);
+            if (index < 0) return;
+            event.preventDefault();
+            sliders[index + (event.key === "ArrowUp" ? -1 : 1)]?.focus();
+          });
           for (const trait of state.traits) {
             const row = document.createElement("label");
             row.className = "trait-row";
@@ -1563,6 +1574,7 @@
             slider.value = String(person.values[trait.id] ?? 50);
             slider.dataset.traitId = trait.id;
             slider.setAttribute("aria-label", `${traitLabel(trait)} score for ${person.name || "person"}`);
+            slider.setAttribute("aria-describedby", "trait-slider-instructions");
             const highLabel = document.createElement("span");
             highLabel.textContent = trait.name;
             slider.addEventListener("input", () => {
