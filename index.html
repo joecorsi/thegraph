@@ -2173,11 +2173,12 @@
           context.arc(point.x, point.y, 9 + 17 * progress, 0, Math.PI * 2);
           context.stroke();
         }
-        if (hoveredIndex !== -1 && hoveredIndex !== selectedIndex) drawHighlight(hoveredIndex);
+        if (hoveredIndex !== -1 && hoveredIndex !== selectedIndex && hoveredPersonId === null) drawHighlight(hoveredIndex);
         if (selectedIndex !== -1) {
           drawDot(selectedIndex);
           drawHighlight(selectedIndex);
         }
+        if (hoveredIndex !== -1 && hoveredIndex !== selectedIndex && hoveredPersonId !== null) drawHighlight(hoveredIndex);
         context.globalAlpha = 1;
         if (awaitingPlacement.length && !reducedMotion.matches) {
           if (placementRingFrame === null) {
