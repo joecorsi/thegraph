@@ -441,6 +441,7 @@
       const BACKGROUND_KEY = "the-pear-background";
       const AGE_AXIS = "__person_age__";
       const NAME_FOCUS_RING_DURATION = 400;
+      const PLACEMENT_RING_INTERVAL = 1200;
       const RELATIONSHIP_COLORS = { friend: "#009b4f", enemy: "#382110", lover: "#f25416", family: "#7441a6" };
       const UNCLASSIFIED_COLOR = "#d3d3d3";
       const relationshipColor = person => RELATIONSHIP_COLORS[person.relationship] ?? UNCLASSIFIED_COLOR;
@@ -578,6 +579,8 @@
       let focusedNamePersonId = null;
       let nameFocusRingStart = null;
       let nameFocusRingFrame = null;
+      let placementRingFrame = null;
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       let selectedPersonId = null;
       let foregroundPersonId = null;
       const graphOpenedPeople = new Set();
@@ -914,6 +917,7 @@
             person && typeof person.id === "string" && typeof person.name === "string" &&
             (person.age === undefined || (Number.isSafeInteger(person.age) && person.age >= 0)) &&
             (person.hidden === undefined || typeof person.hidden === "boolean") &&
+            (person.awaitingPlacement === undefined || typeof person.awaitingPlacement === "boolean") &&
             (person.relationship === undefined || Object.hasOwn(RELATIONSHIP_COLORS, person.relationship)) &&
             (person.color === undefined || /^#[0-9a-f]{6}$/i.test(person.color)) &&
             person.values && typeof person.values === "object"
@@ -1043,6 +1047,8 @@
           activeGraphId = null;
           activeGraphName = "";
           state = null;
+          if (placementRingFrame !== null) cancelAnimationFrame(placementRingFrame);
+          placementRingFrame = null;
           return;
         }
         el.authScreen.hidden = true;
@@ -1667,7 +1673,7 @@
 
       function startNameFocusRing() {
         stopNameFocusRing();
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (reducedMotion.matches) return;
         nameFocusRingStart = performance.now();
         const animate = () => {
           if (performance.now() - nameFocusRingStart >= NAME_FOCUS_RING_DURATION) {
@@ -1748,11 +1754,16 @@
         const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
         const x = (point.x - chartDrag.offsetX - bounds.left) / (bounds.right - bounds.left) * 100;
         const y = (bounds.bottom - point.y + chartDrag.offsetY) / (bounds.bottom - bounds.top) * 100;
+        const previousX = person.values[chartDrag.xTrait];
+        const previousY = person.values[chartDrag.yTrait];
         if (chartDrag.xTrait === chartDrag.yTrait) {
           person.values[chartDrag.xTrait] = clamp((x + y) / 2);
         } else {
           if (chartDrag.xTrait !== AGE_AXIS) person.values[chartDrag.xTrait] = clamp(x);
           if (chartDrag.yTrait !== AGE_AXIS) person.values[chartDrag.yTrait] = clamp(y);
+        }
+        if (person.values[chartDrag.xTrait] !== previousX || person.values[chartDrag.yTrait] !== previousY) {
+          delete person.awaitingPlacement;
         }
         updatePersonSliders(person);
         drawChart();
@@ -1803,6 +1814,7 @@
         const next = Math.max(0, Math.min(100, value + direction[1]));
         if (next === value) return;
         person.values[trait] = next;
+        delete person.awaitingPlacement;
         hoveredPersonId = null;
         updatePersonSliders(person);
         drawChart();
@@ -1825,6 +1837,8 @@
         const canvas = el.chart;
         const bounds = canvas.getBoundingClientRect();
         if (!state || bounds.width === 0) {
+          if (placementRingFrame !== null) cancelAnimationFrame(placementRingFrame);
+          placementRingFrame = null;
           chartLabelHits = [];
           return;
         }
@@ -1950,8 +1964,34 @@
           context.arc(x, y, 9 + 17 * progress, 0, Math.PI * 2);
           context.stroke();
         }
+        const awaitingPlacement = plotted.filter(({ person }) => person.awaitingPlacement);
+        const placementProgress = reducedMotion.matches ? 0.3 :
+          Math.min(1, (performance.now() % PLACEMENT_RING_INTERVAL) / NAME_FOCUS_RING_DURATION);
+        for (const { point } of awaitingPlacement) {
+          const progress = placementProgress;
+          if (progress === 1) continue;
+          context.globalAlpha = 1 - progress;
+          context.strokeStyle = "#333";
+          context.lineWidth = 2;
+          context.beginPath();
+          context.arc(point.x, point.y, 9 + 17 * progress, 0, Math.PI * 2);
+          context.stroke();
+        }
         context.globalAlpha = 1;
+        if (awaitingPlacement.length && !reducedMotion.matches) {
+          if (placementRingFrame === null) {
+            placementRingFrame = requestAnimationFrame(() => {
+              placementRingFrame = null;
+              drawChart();
+            });
+          }
+        } else if (placementRingFrame !== null) {
+          cancelAnimationFrame(placementRingFrame);
+          placementRingFrame = null;
+        }
       }
+
+      reducedMotion.addEventListener("change", drawChart);
 
       function render() {
         el.relationshipColors.checked = state.colorByRelationship;
@@ -2473,7 +2513,7 @@
         }
         const values = Object.fromEntries(state.traits.map(trait => [trait.id, 50]));
         const person = {
-          id: makeId("person"), name, color: newPersonColor, values,
+          id: makeId("person"), name, color: newPersonColor, values, awaitingPlacement: true,
           ...(el.newPersonRelationship.value === "" ? {} : { relationship: el.newPersonRelationship.value }),
           ...(el.newPersonAge.value === "" ? {} : { age: el.newPersonAge.valueAsNumber })
         };
