@@ -309,9 +309,9 @@
                 <form id="add-person-form" class="add-row">
                   <input id="new-person-name" type="text" size="31" maxlength="40" placeholder="Name" aria-label="New person's name">
                   <span class="person-relationship">
-                    <button class="relationship-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="new-person-relationship"><span>None</span></button>
-                    <select id="new-person-relationship" aria-label="New person's relationship" size="5" hidden>
-                      <option value="" selected>None</option>
+                    <button class="relationship-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="new-person-relationship"><span>Type</span></button>
+                    <select id="new-person-relationship" aria-label="New person's relationship" size="4" hidden>
+                      <option value="" selected disabled hidden>Type</option>
                       <option value="friend">Friend</option>
                       <option value="family">Family</option>
                       <option value="enemy">Foe</option>
@@ -766,7 +766,8 @@
           startingValue = select.value;
           if (deferChange) {
             const bounds = toggle.getBoundingClientRect();
-            select.size = Math.min(9, Math.max(2, select.options.length));
+            const visibleOptionCount = [...select.options].filter(option => !option.hidden).length;
+            select.size = Math.min(9, Math.max(2, visibleOptionCount));
             select.style.height = "";
             select.style.maxHeight = options.autoDirection || options.fixed ? "" : `${Math.max(0, window.innerHeight - bounds.bottom - 20)}px`;
             const availableWidth = options.alignRight ? bounds.right - 16 : window.innerWidth - bounds.left - 16;
