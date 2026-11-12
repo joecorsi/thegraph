@@ -348,6 +348,7 @@
             <form id="new-graph-form" class="auth-form">
               <label for="new-graph-name">Graph name</label>
               <input id="new-graph-name" type="text" maxlength="80" value="Untitled graph">
+              <label><input id="copy-graph-people" type="checkbox"> Copy people and traits from current graph</label>
               <div id="new-graph-notice" class="notice" role="status" aria-live="polite"></div>
               <div class="dialog-actions">
                 <button id="cancel-new-graph" type="button">Cancel</button>
@@ -507,6 +508,7 @@
         newGraphDialog: document.getElementById("new-graph-dialog"),
         newGraphForm: document.getElementById("new-graph-form"),
         newGraphName: document.getElementById("new-graph-name"),
+        copyGraphPeople: document.getElementById("copy-graph-people"),
         newGraphNotice: document.getElementById("new-graph-notice"),
         createGraph: document.getElementById("create-graph"),
         cancelNewGraph: document.getElementById("cancel-new-graph"),
@@ -1121,17 +1123,29 @@
         graphDropdown.sync();
       }
 
-      async function createGraph(name, flush = true) {
+      async function createGraph(name, flush = true, copyPeople = false) {
+        const sourceGraphId = activeGraphId;
         if (flush) await flushPendingSave();
+        const data = initialState();
+        if (copyPeople) {
+          if (!state || !sourceGraphId || activeGraphId !== sourceGraphId) {
+            throw new Error("The source graph is no longer available.");
+          }
+          const source = JSON.parse(JSON.stringify(state));
+          data.traits = source.traits;
+          data.people = source.people.map(person => ({ ...person, id: makeId("person") }));
+          data.xTrait = source.xTrait;
+          data.yTrait = source.yTrait;
+        }
         const cleanName = name.trim().slice(0, 80) || "Untitled graph";
-        const { data, error } = await client
+        const { data: graph, error } = await client
           .from("graphs")
-          .insert({ user_id: currentUser.id, name: cleanName, data: initialState() })
+          .insert({ user_id: currentUser.id, name: cleanName, data })
           .select("id, user_id, name, data, created_at, updated_at")
           .single();
         if (error) throw error;
-        graphs.unshift(data);
-        activateGraph(data);
+        graphs.unshift(graph);
+        activateGraph(graph);
         setSaveStatus("New graph created.");
       }
 
@@ -2137,6 +2151,7 @@
 
       el.newGraph.addEventListener("click", () => {
         el.newGraphName.value = "Untitled graph";
+        el.copyGraphPeople.checked = false;
         el.newGraphNotice.classList.remove("visible");
         el.newGraphDialog.showModal();
         el.newGraphName.select();
@@ -2153,7 +2168,7 @@
         el.createGraph.disabled = true;
         el.cancelNewGraph.disabled = true;
         try {
-          await createGraph(el.newGraphName.value);
+          await createGraph(el.newGraphName.value, true, el.copyGraphPeople.checked);
           el.newGraphDialog.close();
         } catch (error) {
           showNotice(el.appNotice, `Couldn't create a graph: ${error.message}`);
