@@ -115,9 +115,10 @@
       #people-sort-toggle svg { position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; transform: translate(-50%, -50%); }
       #people-sort-toggle .sort-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
       #people-sort-toggle .sort-size { visibility: hidden; }
-      .people-list-wrap { position: relative; min-width: 0; min-height: 0; }
-      .people-list { box-sizing: border-box; height: 100%; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-      .people-scroll-hint { position: absolute; right: 0; bottom: 0; padding: 3px 6px; border-radius: 2px; background: #efefef; color: #000; font: 12px Arial, sans-serif; pointer-events: none; }
+      .people-list-wrap { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+      .people-list { box-sizing: border-box; flex: 1 1 0; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+      .people-scroll-hint { padding: 3px 6px; border-radius: 2px; background: #efefef; color: #000; font: 12px Arial, sans-serif; text-align: center; }
+      .people-scroll-hint.at-bottom { visibility: hidden; }
       #add-person-form { flex-wrap: nowrap; min-width: 0; gap: .4rem; }
       #add-person-form button[type=submit] { width: var(--person-action-width); flex: none; }
       #new-person-name { flex: 1 1 auto; min-width: 0; max-width: 100%; box-sizing: border-box; }
@@ -326,7 +327,7 @@
                 </form>
                 <div class="people-list-wrap" id="people-list-wrap">
                   <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
-                  <div class="people-scroll-hint" id="people-scroll-hint" hidden>Scroll for more &#8595;</div>
+                  <div class="people-scroll-hint" id="people-scroll-hint" hidden>Scroll for more</div>
                 </div>
               </div>
               <div id="app-notice" class="notice" role="status" aria-live="polite"></div>
@@ -1300,8 +1301,10 @@
       }
 
       function updatePeopleScrollHint() {
-        el.peopleScrollHint.hidden = el.peopleList.clientHeight === 0 ||
-          el.peopleList.scrollHeight - el.peopleList.scrollTop - el.peopleList.clientHeight <= 1;
+        el.peopleScrollHint.hidden = el.peopleListWrap.clientHeight === 0 ||
+          el.peopleList.scrollHeight - el.peopleListWrap.clientHeight <= 1;
+        el.peopleScrollHint.classList.toggle("at-bottom",
+          el.peopleList.scrollHeight - el.peopleList.scrollTop - el.peopleList.clientHeight <= 1);
       }
 
       const peopleScrollObserver = new ResizeObserver(updatePeopleScrollHint);
