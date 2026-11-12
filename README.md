@@ -2,6 +2,8 @@
 
 A no-build HTML/CSS/JavaScript app for rating people on adjustable traits and comparing them on a canvas scatter plot. It uses no UI framework. Supabase JS is used only for authentication and database access.
 
+The hosted app is available at [joecorsi.github.io/thepear/](https://joecorsi.github.io/thepear/).
+
 People expanded by double-clicking them on the graph collapse when you click outside the graph. Focusing a person's name field highlights their dot and name in front of others until the field loses focus, with a brief expanding ring unless reduced motion is enabled.
 
 Choose a trait pair or age from either end of the square graph's centered, plus-shaped axes. The axis menus show full trait pairs; use the arrow keys and Enter to choose one, or Escape to cancel. Each trait has a low end (left or bottom, score 0) and a high end (right or top, score 100); 50 is the midpoint. Age axes span the lowest and highest ages in the list, including hidden people, with a single age centered; people without an age are hidden while an age axis is selected. A fixed white dot marks the center, and the number of plotted people appears beside the People heading. Drag a person's point on the plot to change their scores for the selected X and Y traits, or expand their name to use the sliders, which show the pair's ends on the left and right. Click a point or label to select it, then use the arrow keys to change its scores one step at a time; Escape or clicking outside the graph clears the selection and highlight. The last clicked name stays in front of other names until another person is clicked or Escape is pressed while the graph is focused. Age never changes through dragging or arrow keys; if both axes are age, points cannot be moved. Hover over a name or point to temporarily highlight both with a dotted ring and fade the others; double-click either to find and expand that person in the list. Changes save automatically. When both axes use the same trait, dragging adjusts its single score along the diagonal, and arrow keys change that score. Overlapping points can be separated by dragging the top point.
@@ -21,7 +23,7 @@ Each graph is one row in `public.graphs`; its creation time is recorded in `crea
 1. Create a Supabase project.
 2. In the Supabase SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql).
 3. In **Authentication → Providers**, enable Google and email. Configure Google OAuth credentials in Supabase; the provider secret stays in Supabase and is never entered into this app.
-4. In **Authentication → URL Configuration**, set the site's URL and allow the app's redirect URL. For local development, use `http://localhost:8000`.
+4. In **Authentication → URL Configuration**, set the site URL to `https://joecorsi.github.io/thepear/` and allow that URL as a redirect. For local development, also allow `http://localhost:8000/`.
 5. In this directory, start a static server:
 
    ```sh
