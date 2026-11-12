@@ -1774,7 +1774,7 @@
         const selected = chartLabelHits.find(hit => hit.personId === selectedPersonId &&
           point.x >= hit.left && point.x <= hit.right && point.y >= hit.top && point.y <= hit.bottom);
         if (selected) return selected;
-        const hoveredBox = chartLabelHits.find(hit => hit.isHoverBox && hit.personId === hoveredPersonId &&
+        const hoveredBox = chartLabelHits.find(hit => hit.isNameBox && hit.personId === hoveredPersonId &&
           point.x >= hit.left && point.x <= hit.right && point.y >= hit.top && point.y <= hit.bottom);
         if (hoveredBox) return hoveredBox;
         const focused = chartLabelHits.find(hit => hit.personId === focusedNamePersonId &&
@@ -1798,7 +1798,7 @@
         const person = personAtPoint(point);
         const label = labelAtPoint(point);
         if (label && person?.id !== selectedPersonId &&
-            (label.personId === selectedPersonId || label.isHoverBox) && person?.id !== label.personId) {
+            (label.personId === selectedPersonId || label.isNameBox) && person?.id !== label.personId) {
           return { person: null, personId: label.personId };
         }
         return { person, personId: person?.id ?? label?.personId ?? null };
@@ -2041,25 +2041,30 @@
           const labelOnLeft = x > right - 90;
           const labelX = labelOnLeft ? x - 10 - metrics.width : x + 10;
           const labelY = y - 9;
-          let hoverBox = null;
-          if (person.id === hoveredPersonId && width > 14 && height > 25) {
+          let nameBox = null;
+          if ((person.id === hoveredPersonId || person.id === selectedPersonId) && width > 14 && height > 25) {
             context.save();
-            context.font = "bold 16px Arial, sans-serif";
-            const boxWidth = Math.min(context.measureText(text).width + 12, width - 2);
+            context.font = "bold 16px serif";
+            context.textBaseline = "alphabetic";
+            const boxMetrics = context.measureText(text);
+            const boxWidth = Math.min(boxMetrics.width + 12, width - 2);
             context.restore();
             const boxHeight = 24;
             const boxLeft = Math.max(1, Math.min(x - boxWidth / 2, width - boxWidth - 1));
             const boxTop = y >= boxHeight + 11 ? y - boxHeight - 10 : Math.min(height - boxHeight - 1, y + 10);
-            hoverBox = {
-              personId: person.id, isHoverBox: true,
+            nameBox = {
+              personId: person.id, isNameBox: true,
               left: boxLeft, right: boxLeft + boxWidth,
-              top: boxTop, bottom: boxTop + boxHeight
+              top: boxTop, bottom: boxTop + boxHeight,
+              textOffset: (boxMetrics.actualBoundingBoxAscent - boxMetrics.actualBoundingBoxDescent) / 2
             };
           }
           // Keep the hover active while moving between the point and its name box.
-          const hoverHit = hoverBox && { ...hoverBox, top: Math.min(hoverBox.top, y), bottom: Math.max(hoverBox.bottom, y) };
+          const nameHit = nameBox && (person.id === hoveredPersonId
+            ? { ...nameBox, top: Math.min(nameBox.top, y), bottom: Math.max(nameBox.bottom, y) }
+            : nameBox);
           return {
-            text, x: labelX, y: labelY, hoverBox, hoverHit,
+            text, x: labelX, y: labelY, nameBox, nameHit,
             hit: {
               personId: person.id,
               left: labelX - metrics.actualBoundingBoxLeft - 3,
@@ -2069,7 +2074,11 @@
             }
           };
         });
-        chartLabelHits = labels.flatMap(label => label.hoverHit ? [label.hit, label.hoverHit] : [label.hit]);
+        chartLabelHits = labels.flatMap(label => {
+          if (!label.nameHit) return [label.hit];
+          return label.nameBox.personId === selectedPersonId && label.nameBox.personId !== hoveredPersonId
+            ? [label.nameHit] : [label.hit, label.nameHit];
+        });
         const hoveredIndex = plotted.findIndex(({ person }) => person.id === (hoveredPersonId ?? focusedNamePersonId ?? selectedPersonId));
         const foregroundIndex = plotted.findIndex(({ person }) => person.id === foregroundPersonId);
         const focusedIndex = plotted.findIndex(({ person }) => person.id === focusedNamePersonId);
@@ -2092,23 +2101,24 @@
         });
         context.globalAlpha = 1;
         const drawLabel = (index, hovered = false) => {
-          const { text, x: labelX, y: labelY, hit, hoverBox } = labels[index];
+          const { text, x: labelX, y: labelY, hit, nameBox } = labels[index];
           context.globalAlpha = hoveredIndex !== -1 && !hovered && index !== focusedIndex ? 0.4 : 1;
-          if (hovered && hoverBox) {
+          if (hovered && nameBox) {
             const color = state.colorByRelationship ? relationshipColor(plotted[index].person) : "#000";
             context.save();
-            context.font = "bold 16px Arial, sans-serif";
+            context.font = "bold 16px serif";
+            context.textBaseline = "alphabetic";
             context.fillStyle = "#fff";
             context.strokeStyle = color;
             context.lineWidth = 1;
             context.beginPath();
-            context.roundRect(hoverBox.left + .5, hoverBox.top + .5,
-              hoverBox.right - hoverBox.left - 1, hoverBox.bottom - hoverBox.top - 1, 3);
+            context.roundRect(nameBox.left + .5, nameBox.top + .5,
+              nameBox.right - nameBox.left - 1, nameBox.bottom - nameBox.top - 1, 3);
             context.fill();
             context.stroke();
             context.fillStyle = color;
-            context.fillText(text, hoverBox.left + 6, (hoverBox.top + hoverBox.bottom) / 2,
-              hoverBox.right - hoverBox.left - 12);
+            context.fillText(text, nameBox.left + 6, (nameBox.top + nameBox.bottom) / 2 + nameBox.textOffset,
+              nameBox.right - nameBox.left - 12);
             context.restore();
             return;
           }
