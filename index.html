@@ -419,13 +419,13 @@
           <dialog id="traits-dialog" aria-labelledby="traits-title">
             <h2 id="traits-title">Traits</h2>
             <p>Each trait runs from its low end (left or bottom) to its high end (right or top).</p>
-            <div id="dimensions" class="dimensions"></div>
             <form id="add-trait-form" class="add-row">
               <input id="new-trait-low" type="text" maxlength="32" placeholder="Low end (e.g. Lame)" aria-label="New trait low end">
               <button id="swap-new-trait" class="swap-trait" type="button" aria-label="Swap new trait ends" title="Swap trait ends">⇄</button>
               <input id="new-trait-name" type="text" maxlength="32" placeholder="High end (e.g. Cool)" aria-label="New trait high end">
               <button class="button" type="submit" aria-label="Add trait">Add</button>
             </form>
+            <div id="dimensions" class="dimensions"></div>
             <div id="traits-notice" class="notice" role="status" aria-live="polite"></div>
             <p class="dialog-actions">
               <button id="cancel-traits" type="button">Cancel</button>
@@ -2664,11 +2664,11 @@
           return;
         }
         const trait = { id: makeId("trait"), name, opposite };
-        traitsDraft.push(trait);
+        traitsDraft.unshift(trait);
         el.newTraitName.value = "";
         el.newTraitLow.value = "";
         renderDimensions();
-        el.dimensions.scrollTop = el.dimensions.scrollHeight;
+        el.dimensions.scrollTop = 0;
       });
 
       for (const dialog of document.querySelectorAll("dialog")) {
