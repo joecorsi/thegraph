@@ -101,7 +101,9 @@
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
       .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
       .chart-heading, .people-heading { gap: var(--control-gap); padding: var(--control-gap) 0 calc(var(--control-gap) + 5px); }
+      .people-controls { display: flex; flex: 1 1 max-content; align-items: center; min-width: 0; gap: var(--control-gap); }
       #open-traits, #people-expand-all, .people-filter { flex: 1 1 auto; }
+      #open-traits, #people-expand-all { padding-inline: 2px; }
       .people-sort { flex: 0 0 var(--person-action-width); margin-left: auto; }
       #people-expand-all { display: grid; }
       #people-expand-all::before { content: "Collapse all"; visibility: hidden; grid-area: 1 / 1; }
@@ -211,7 +213,6 @@
         .layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
       }
       @media (max-width: 500px) {
-        #open-traits, #people-expand-all { padding-inline: 3px; }
         #add-person-form, .summary-name { flex-wrap: wrap; }
         #new-person-name { flex-basis: 0; }
         #new-person-name, .person-name { min-width: 4rem; }
@@ -318,27 +319,29 @@
               <div class="people-content">
                 <header class="panel-heading people-heading">
                   <h2 id="people-title">People</h2>
-                  <button id="open-traits" type="button">Traits</button>
-                  <button id="people-expand-all" type="button" aria-label="Expand all people" aria-controls="people-list" disabled><span>Expand all</span></button>
-                  <span class="people-filter">
-                    <button id="people-count" type="button" aria-label="Filter people" aria-haspopup="menu" aria-expanded="false" aria-controls="people-filter-menu"><span class="people-count-content" data-size="8 people"><span id="people-count-label">0 people</span></span></button>
-                    <div id="people-filter-menu" role="menu" aria-label="Filter people" hidden>
-                      <button type="button" role="menuitemradio" aria-checked="true" data-filter=""><span>All</span><span>0</span></button>
-                      <button type="button" role="menuitemradio" aria-checked="false" data-filter="friend"><span>Friends</span><span>0</span></button>
-                      <button type="button" role="menuitemradio" aria-checked="false" data-filter="enemy"><span>Foes</span><span>0</span></button>
-                      <button type="button" role="menuitemradio" aria-checked="false" data-filter="lover"><span>Lovers</span><span>0</span></button>
-                      <button type="button" role="menuitemradio" aria-checked="false" data-filter="family"><span>Family</span><span>0</span></button>
-                    </div>
-                  </span>
-                  <span class="people-sort">
-                    <button id="people-sort-toggle" type="button" aria-label="Sort people" aria-haspopup="listbox" aria-expanded="false" aria-controls="people-sort-select" title="Sort people"><span class="sort-label"></span><span class="sort-size" aria-hidden="true">Sort</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M2 7h8M2 11h4M11 9v5m-2-2 2 2 2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                    <select id="people-sort-select" aria-label="Sort people" size="4" hidden>
-                      <option value="recent" selected>Creation order</option>
-                      <option value="name">Alphabetical (A–Z)</option>
-                      <option value="age">Age (descending)</option>
-                      <option value="visibility">Show/hide (hidden first)</option>
-                    </select>
-                  </span>
+                  <div class="people-controls">
+                    <button id="open-traits" type="button">Traits</button>
+                    <button id="people-expand-all" type="button" aria-label="Expand all people" aria-controls="people-list" disabled><span>Expand all</span></button>
+                    <span class="people-filter">
+                      <button id="people-count" type="button" aria-label="Filter people" aria-haspopup="menu" aria-expanded="false" aria-controls="people-filter-menu"><span class="people-count-content" data-size="8 people"><span id="people-count-label">0 people</span></span></button>
+                      <div id="people-filter-menu" role="menu" aria-label="Filter people" hidden>
+                        <button type="button" role="menuitemradio" aria-checked="true" data-filter=""><span>All</span><span>0</span></button>
+                        <button type="button" role="menuitemradio" aria-checked="false" data-filter="friend"><span>Friends</span><span>0</span></button>
+                        <button type="button" role="menuitemradio" aria-checked="false" data-filter="enemy"><span>Foes</span><span>0</span></button>
+                        <button type="button" role="menuitemradio" aria-checked="false" data-filter="lover"><span>Lovers</span><span>0</span></button>
+                        <button type="button" role="menuitemradio" aria-checked="false" data-filter="family"><span>Family</span><span>0</span></button>
+                      </div>
+                    </span>
+                    <span class="people-sort">
+                      <button id="people-sort-toggle" type="button" aria-label="Sort people" aria-haspopup="listbox" aria-expanded="false" aria-controls="people-sort-select" title="Sort people"><span class="sort-label"></span><span class="sort-size" aria-hidden="true">Sort</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12M2 7h8M2 11h4M11 9v5m-2-2 2 2 2-2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                      <select id="people-sort-select" aria-label="Sort people" size="4" hidden>
+                        <option value="recent" selected>Creation order</option>
+                        <option value="name">Alphabetical (A–Z)</option>
+                        <option value="age">Age (descending)</option>
+                        <option value="visibility">Show/hide (hidden first)</option>
+                      </select>
+                    </span>
+                  </div>
                 </header>
                 <form id="add-person-form" class="add-row">
                   <input id="new-person-name" type="text" size="31" maxlength="40" placeholder="Name" aria-label="New person's name">
