@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>The Pear</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%90%3C/text%3E%3C/svg%3E">
     <style>
       html[data-background="rainbow"] { background: radial-gradient(ellipse at 25% 20%, #ffffffb3, transparent 38%), conic-gradient(from 225deg at 55% 50%, #ff8fcd, #ffc483, #f8ef8b, #91e9bd, #8fd8ff, #c0a3f6, #ff8fcd); background-attachment: fixed; }
       body { isolation: isolate; margin: 18px 25px; }
@@ -44,6 +45,7 @@
       .dropdown-highlight { position: absolute; z-index: 3; overflow: hidden; color: #fff; background: #00f; pointer-events: none; }
       .dropdown-highlight span { position: absolute; box-sizing: border-box; padding: 1px 4px; overflow: hidden; white-space: nowrap; }
       .dropdown-hover { z-index: 4; }
+      #graph-select option, .graph-select .dropdown-highlight span { padding-left: 3px; }
       .background-error { max-width: 20em; color: #a00; }
       .masthead, .account-bar:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; }
       .masthead { justify-content: space-between; }
@@ -66,8 +68,10 @@
       @keyframes status-spin { to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) { .status-spinner:not([hidden]) { animation: none; } }
       .graph-toggle, .axis-toggle, .relationship-toggle { position: relative; display: flex; width: 100%; padding-right: 24px; text-align: left; }
+      .graph-toggle { padding-left: 2px; }
       .graph-toggle span, .axis-toggle span, .relationship-toggle span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
       .graph-toggle::after, .axis-toggle::after, .relationship-toggle::after { content: "▾"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+      .graph-toggle::after, .relationship-toggle::after { content: ""; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; pointer-events: none; }
       .panel { min-width: 0; }
       .graph-panel, .people-panel { display: flex; flex-direction: column; min-height: 0; }
       .chart-space { flex: 1; min-height: 0; container-type: size; }
@@ -106,8 +110,7 @@
       .person-card[open] .person-caret::before { transform: translate(10px, 2px) rotate(90deg); }
       .person-name { flex: 1; min-width: 0; }
       .person-relationship { position: relative; flex: none; width: calc(5.75rem - 25px); min-width: 0; }
-      .relationship-toggle { box-sizing: border-box; padding-left: 2px; padding-right: 11px; }
-      .relationship-toggle::after { right: 1px; }
+      .relationship-toggle { box-sizing: border-box; padding-left: 2px; padding-right: 15px; }
       .relationship-toggle.unclassified span, .person-relationship option[value=""] { font-style: italic; }
       .person-relationship select { position: fixed; z-index: 20; min-width: 0; }
       .person-relationship .dropdown-highlight { position: fixed; z-index: 21; }
@@ -157,6 +160,8 @@
         #add-person-form, .summary-name { flex-wrap: wrap; }
         #new-person-name, .person-name { min-width: 4rem; }
         .person-relationship { width: calc(4.75rem - 25px); }
+        .graph-toggle, .relationship-toggle { padding-left: 1px; }
+        #graph-select option, .graph-select .dropdown-highlight span { padding-left: 2px; }
         .relationship-toggle span { font-size: 11px; }
       }
     </style>
@@ -253,7 +258,7 @@
                     <select id="new-person-relationship" aria-label="New person's relationship" size="4" hidden>
                       <option value="" selected>None</option>
                       <option value="friend">Friend</option>
-                      <option value="enemy">Enemy</option>
+                      <option value="enemy">Foe</option>
                       <option value="lover">Lover</option>
                     </select>
                   </span>
@@ -371,6 +376,7 @@
       const AGE_AXIS = "__person_age__";
       const RELATIONSHIP_COLORS = { friend: "#009b4f", enemy: "#382110", lover: "#f25416" };
       const UNCLASSIFIED_COLOR = "#d3d3d3";
+      const relationshipColor = person => RELATIONSHIP_COLORS[person.relationship] ?? UNCLASSIFIED_COLOR;
       const DEFAULT_CONFIG = {
         url: "https://auhvnhytuxhhzdsjiugt.supabase.co",
         key: "sb_publishable_vsbBzlNtb1Aa0z6sAGG8WA_43xh9JQ_"
@@ -1616,7 +1622,7 @@
           const { x, y } = point;
           context.globalAlpha = hoveredIndex !== -1 && index !== hoveredIndex ? 0.4 : 1;
           context.fillStyle = state.colorByRelationship
-            ? RELATIONSHIP_COLORS[person.relationship] ?? UNCLASSIFIED_COLOR : person.color;
+            ? relationshipColor(person) : person.color;
           context.strokeStyle = "#fff";
           context.lineWidth = personDotBorderWidth;
           context.beginPath();
@@ -1635,8 +1641,8 @@
             context.fillRect(hit.left, hit.top, hit.right - hit.left, hit.bottom - hit.top);
           }
           context.strokeText(text, labelX, labelY);
-          context.fillStyle = state.colorByRelationship && !plotted[index].person.relationship
-            ? UNCLASSIFIED_COLOR : "#000";
+          context.fillStyle = state.colorByRelationship
+            ? relationshipColor(plotted[index].person) : "#000";
           context.fillText(text, labelX, labelY);
         };
         plotted.forEach((_, index) => {
