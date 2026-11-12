@@ -1771,37 +1771,32 @@
       }
 
       function labelAtPoint(point) {
-        const selected = chartLabelHits.find(hit => hit.personId === selectedPersonId &&
+        const hits = chartLabelHits.filter(hit =>
           point.x >= hit.left && point.x <= hit.right && point.y >= hit.top && point.y <= hit.bottom);
+        const labels = hits.filter(hit => !hit.isNameBox && !hit.isHoverAnchor);
+        const selected = labels.find(hit => hit.personId === selectedPersonId);
         if (selected) return selected;
-        const hoveredBox = chartLabelHits.find(hit => hit.isNameBox && hit.personId === hoveredPersonId &&
-          point.x >= hit.left && point.x <= hit.right && point.y >= hit.top && point.y <= hit.bottom);
-        if (hoveredBox) return hoveredBox;
-        const focused = chartLabelHits.find(hit => hit.personId === focusedNamePersonId &&
-          point.x >= hit.left && point.x <= hit.right && point.y >= hit.top && point.y <= hit.bottom);
+        const focused = labels.find(hit => hit.personId === focusedNamePersonId);
         if (focused) return focused;
         let label = null;
         let closestDistance = Infinity;
-        for (let i = chartLabelHits.length - 1; i >= 0; i--) {
-          const hit = chartLabelHits[i];
-          if (point.x < hit.left || point.x > hit.right || point.y < hit.top || point.y > hit.bottom) continue;
+        for (let i = labels.length - 1; i >= 0; i--) {
+          const hit = labels[i];
           const distance = Math.hypot(point.x - (hit.left + hit.right) / 2, point.y - (hit.top + hit.bottom) / 2);
           if (distance < closestDistance) {
             label = hit;
             closestDistance = distance;
           }
         }
-        return label;
+        return label ??
+          hits.find(hit => hit.isHoverAnchor) ??
+          hits.find(hit => hit.isNameBox && hit.personId === hoveredPersonId) ??
+          hits.find(hit => hit.isNameBox && hit.personId === selectedPersonId) ?? null;
       }
 
       function chartHitAtPoint(point) {
         const person = personAtPoint(point);
-        const label = labelAtPoint(point);
-        if (label && person?.id !== selectedPersonId &&
-            (label.personId === selectedPersonId || label.isNameBox) && person?.id !== label.personId) {
-          return { person: null, personId: label.personId };
-        }
-        return { person, personId: person?.id ?? label?.personId ?? null };
+        return { person, personId: person?.id ?? labelAtPoint(point)?.personId ?? null };
       }
 
       function updatePersonSliders(person) {
@@ -2076,8 +2071,8 @@
         });
         chartLabelHits = labels.flatMap(label => {
           if (!label.nameHit) return [label.hit];
-          return label.nameBox.personId === selectedPersonId && label.nameBox.personId !== hoveredPersonId
-            ? [label.nameHit] : [label.hit, label.nameHit];
+          return label.nameBox.personId === hoveredPersonId
+            ? [{ ...label.hit, isHoverAnchor: true }, label.nameHit] : [label.nameHit];
         });
         const hoveredIndex = plotted.findIndex(({ person }) => person.id === (hoveredPersonId ?? focusedNamePersonId ?? selectedPersonId));
         const foregroundIndex = plotted.findIndex(({ person }) => person.id === foregroundPersonId);
