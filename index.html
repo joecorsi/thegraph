@@ -118,7 +118,7 @@
       .axis-y-low, .axis-y-high { left: calc(50% + 2px); }
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
-      .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
+      .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
       .chart-heading, .people-heading { gap: var(--control-gap); padding: var(--control-gap) 0 calc(var(--control-gap) + 5px); }
       .people-controls { display: flex; flex: 1 1 max-content; align-items: center; min-width: 0; gap: var(--control-gap); }
       #open-traits, #people-expand-all, .people-filter { flex: 1 1 auto; }
@@ -184,6 +184,7 @@
       .person-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--control-gap); }
       #me-row .person-card { margin-bottom: 0; }
       #me-row .person-actions { grid-template-columns: 1fr; }
+      #me-row .me-details { max-height: min(30vh, 300px); overflow-y: auto; overscroll-behavior: contain; }
       .person-actions button { box-sizing: border-box; width: 100%; min-width: 0; }
       .person-actions button, .graph-action { display: grid; place-items: center; padding: 1px 3px; }
       /* Preserve the height of the text buttons while centering the icons. */
@@ -411,12 +412,10 @@
                   <button class="person-color" id="new-person-color" type="button" aria-label="Choose color for new person"></button>
                   <button class="button" type="submit" aria-label="Add person">Add</button>
                 </form>
+                <div id="me-row"></div>
                 <span id="trait-slider-instructions" class="visually-hidden">Use up and down arrows to move between trait sliders, and left and right arrows to adjust the score.</span>
                 <div class="people-list-wrap" id="people-list-wrap">
-                  <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0">
-                    <div id="me-row"></div>
-                    <div id="person-cards"></div>
-                  </div>
+                  <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
                   <div class="people-scroll-hint" id="people-scroll-hint" hidden>Scroll for more</div>
                 </div>
               </div>
@@ -670,7 +669,6 @@
         peopleSearch: document.getElementById("people-search"),
         peopleSearchClear: document.getElementById("people-search-clear"),
         peopleList: document.getElementById("people-list"),
-        personCards: document.getElementById("person-cards"),
         peopleListWrap: document.getElementById("people-list-wrap"),
         peopleScrollHint: document.getElementById("people-scroll-hint"),
         dimensions: document.getElementById("dimensions"),
@@ -1566,7 +1564,7 @@
       el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
 
       function updatePeopleExpandButton() {
-        const cards = [...el.meRow.children, ...el.personCards.children].filter(card => !card.hidden);
+        const cards = [...el.meRow.children, ...el.peopleList.children].filter(card => !card.hidden);
         const collapse = cards.some(card => card.open);
         const action = collapse ? "Collapse" : "Expand";
         el.peopleExpandAll.firstElementChild.textContent = `${action} all`;
@@ -1575,7 +1573,7 @@
       }
 
       el.peopleExpandAll.addEventListener("click", () => {
-        const cards = [...el.meRow.children, ...el.personCards.children].filter(card => !card.hidden);
+        const cards = [...el.meRow.children, ...el.peopleList.children].filter(card => !card.hidden);
         const expand = !cards.some(card => card.open);
         graphOpenedPeople.clear();
         for (const card of cards) card.open = expand;
@@ -1586,7 +1584,7 @@
         const query = el.peopleSearch.value.trim().toLowerCase();
         el.peopleSearchClear.hidden = !el.peopleSearch.value;
         const people = new Map(state.people.map(person => [person.id, person]));
-        for (const card of el.personCards.children) {
+        for (const card of el.peopleList.children) {
           card.hidden = !people.get(card.dataset.personId).name.toLowerCase().includes(query);
         }
         updatePeopleExpandButton();
@@ -1630,12 +1628,14 @@
       function renderPeople() {
         updatePeopleFilter();
         const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
+        if (el.meRow.querySelector("details[open]")) openPeople.add(ME_ID);
         const scrollTop = el.peopleList.scrollTop;
+        const meScrollTop = el.meRow.querySelector(".me-details")?.scrollTop ?? 0;
         peopleScrollObserver.disconnect();
         peopleScrollObserver.observe(el.peopleList);
         personDropdowns.forEach(dropdown => dropdown.destroy());
         personDropdowns = [];
-        el.personCards.replaceChildren();
+        el.peopleList.replaceChildren();
         el.meRow.replaceChildren();
         for (const [personIndex, person] of [[-1, mePerson], ...sortedPeople()]) {
           const isMe = person === mePerson;
@@ -1923,11 +1923,12 @@
             details.append(dates, traitList);
             card.append(summary, details);
             el.meRow.append(card);
+            details.scrollTop = meScrollTop;
           } else {
             card.append(summary, dates, traitList);
-            el.personCards.append(card);
+            el.peopleList.append(card);
+            peopleScrollObserver.observe(card);
           }
-          peopleScrollObserver.observe(card);
         }
         el.peopleList.scrollTop = scrollTop;
         updatePeopleSearch();
@@ -1973,12 +1974,12 @@
 
       function sortPeopleCards() {
         if (!state) return;
-        const cards = new Map([...el.personCards.children].map(card => [card.dataset.personId, card]));
-        const focused = el.personCards.contains(document.activeElement) ? document.activeElement : null;
+        const cards = new Map([...el.peopleList.children].map(card => [card.dataset.personId, card]));
+        const focused = el.peopleList.contains(document.activeElement) ? document.activeElement : null;
         let next = null;
         for (const [, person] of sortedPeople().reverse()) {
           const card = cards.get(person.id);
-          if (card && card.nextElementSibling !== next) el.personCards.insertBefore(card, next);
+          if (card && card.nextElementSibling !== next) el.peopleList.insertBefore(card, next);
           if (card) next = card;
         }
         if (focused && document.activeElement !== focused) focused.focus({ preventScroll: true });
@@ -2049,7 +2050,7 @@
 
       function personCard(personId) {
         if (personId === ME_ID) return el.meRow.querySelector(".person-card");
-        return [...el.personCards.children].find(item => item.dataset.personId === personId);
+        return [...el.peopleList.children].find(item => item.dataset.personId === personId);
       }
 
       function ageRange() {
@@ -2188,7 +2189,7 @@
         graphOpenedPeople.clear();
         setTimeout(() => {
           if (activeGraphId !== graphId) return;
-          for (const card of el.personCards.children) {
+          for (const card of el.peopleList.children) {
             if (personIds.has(card.dataset.personId)) card.open = false;
           }
           if (personIds.has(ME_ID)) {
@@ -2343,7 +2344,9 @@
         }
         card.open = true;
         graphOpenedPeople.add(personId);
-        el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
+        if (personId !== ME_ID) {
+          el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
+        }
       });
 
       function drawChart() {
@@ -3144,7 +3147,7 @@
         newPersonColor = randomPersonColor();
         el.newPersonColor.style.backgroundColor = newPersonColor;
         render();
-        const card = [...el.personCards.children].find(item => item.dataset.personId === person.id);
+        const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
         if (card && !card.hidden) {
           el.peopleList.scrollTop += card.getBoundingClientRect().top -
             el.peopleList.getBoundingClientRect().top - parseFloat(getComputedStyle(card).marginTop);
