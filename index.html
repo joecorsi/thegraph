@@ -131,6 +131,8 @@
       .people-scroll-hint.at-bottom { visibility: hidden; }
       .people-search { position: relative; margin-bottom: var(--control-gap); }
       #people-search { box-sizing: border-box; width: 100%; height: 28px; padding: 2px 30px; }
+      #people-search:focus { outline: none; border: 1px solid #000; }
+      @media (forced-colors: active) { #people-search:focus { outline: auto; } }
       #people-search::-webkit-search-cancel-button { display: none; }
       .people-search-icon, #people-search-clear { position: absolute; top: 50%; transform: translateY(-50%); }
       .people-search-icon { left: 8px; width: 14px; height: 14px; color: #000; pointer-events: none; }
@@ -167,6 +169,7 @@
       .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
       .chart-heading h2, .people-heading h2 { margin: 0; font-size: 1.25em; font-weight: normal; }
       .chart-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
+      .graph-footer-controls { display: flex; align-items: center; gap: var(--control-gap); }
       .graph-options { position: relative; }
       .graph-options-toggle { position: relative; padding-right: 24px; padding-left: 2px; text-align: left; }
       .graph-options-toggle::after { content: ""; position: absolute; right: 6px; top: 50%; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid currentColor; transform: translateY(-50%); pointer-events: none; }
@@ -306,17 +309,20 @@
                     <p class="chart-hint">Drag a person to adjust</p>
                   </div>
                   <div class="chart-footer">
-                    <span class="graph-options">
-                      <button class="graph-options-toggle" id="graph-options-toggle" type="button" aria-expanded="false" aria-controls="graph-options-menu">Options</button>
-                      <span class="graph-options-menu" id="graph-options-menu" role="group" aria-label="Graph options" hidden>
-                        <label><input type="checkbox" id="relationship-colors"> Color by relationship</label>
-                        <label><input type="checkbox" id="show-names"> Names</label>
-                        <span class="graph-options-separator" role="separator"></span>
-                        <label><input type="checkbox" data-graph-relationship="friend"> Friend</label>
-                        <label><input type="checkbox" data-graph-relationship="family"> Family</label>
-                        <label><input type="checkbox" data-graph-relationship="enemy"> Foe</label>
-                        <label><input type="checkbox" data-graph-relationship="lover"> Lover</label>
+                    <span class="graph-footer-controls">
+                      <span class="graph-options">
+                        <button class="graph-options-toggle" id="graph-options-toggle" type="button" aria-expanded="false" aria-controls="graph-options-menu">Options</button>
+                        <span class="graph-options-menu" id="graph-options-menu" role="group" aria-label="Graph options" hidden>
+                          <label><input type="checkbox" id="relationship-colors"> Color by relationship</label>
+                          <label><input type="checkbox" id="show-names"> Names</label>
+                          <span class="graph-options-separator" role="separator"></span>
+                          <label><input type="checkbox" data-graph-relationship="friend"> Friend</label>
+                          <label><input type="checkbox" data-graph-relationship="family"> Family</label>
+                          <label><input type="checkbox" data-graph-relationship="enemy"> Foe</label>
+                          <label><input type="checkbox" data-graph-relationship="lover"> Lover</label>
+                        </span>
                       </span>
+                      <button id="shuffle-axes" type="button" title="Randomly choose two different traits">Shuffle axes</button>
                     </span>
                     <p class="privacy-note">Your graphs are private to your account</p>
                   </div>
@@ -601,6 +607,7 @@
         chartHint: document.querySelector(".chart-hint"),
         graphOptionsToggle: document.getElementById("graph-options-toggle"),
         graphOptionsMenu: document.getElementById("graph-options-menu"),
+        shuffleAxes: document.getElementById("shuffle-axes"),
         relationshipColors: document.getElementById("relationship-colors"),
         showNames: document.getElementById("show-names"),
         graphRelationships: document.querySelectorAll("[data-graph-relationship]"),
@@ -1348,6 +1355,7 @@
       function renderAxes() {
         state.xTrait = state.xTrait === AGE_AXIS || state.traits.some(trait => trait.id === state.xTrait) ? state.xTrait : state.traits[0]?.id;
         state.yTrait = state.yTrait === AGE_AXIS || state.traits.some(trait => trait.id === state.yTrait) ? state.yTrait : state.traits[1]?.id ?? state.traits[0]?.id;
+        el.shuffleAxes.disabled = state.traits.length < 2;
         el.chartHint.textContent = state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS
           ? "Double-click a person to find them" : "Drag a person to adjust";
         for (const [controls, selected] of [[el.xAxes, state.xTrait], [el.yAxes, state.yTrait]]) {
@@ -2605,6 +2613,25 @@
           });
         }
       }
+
+      el.shuffleAxes.addEventListener("click", () => {
+        const traits = state.traits;
+        const count = traits.length;
+        const currentX = traits.findIndex(trait => trait.id === state.xTrait);
+        const currentY = traits.findIndex(trait => trait.id === state.yTrait);
+        const currentPair = currentX >= 0 && currentY >= 0 && currentX !== currentY
+          ? currentX * (count - 1) + currentY - Number(currentY > currentX) : -1;
+        let pair = Math.floor(Math.random() * (count * (count - 1) - Number(currentPair !== -1)));
+        if (currentPair !== -1 && pair >= currentPair) pair++;
+        const x = Math.floor(pair / (count - 1));
+        let y = pair % (count - 1);
+        if (y >= x) y++;
+        state.xTrait = traits[x].id;
+        state.yTrait = traits[y].id;
+        renderAxes();
+        drawChart();
+        scheduleSave();
+      });
 
       el.openTraits.addEventListener("click", () => {
         el.traitsNotice.classList.remove("visible");
