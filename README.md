@@ -24,6 +24,8 @@ In the New graph dialog, check **Copy people and traits from current graph** to 
 
 Click the people count to filter the list and graph by relationship, or choose All to clear the filter. Use the arrow keys and Enter to choose a filter, or Escape to cancel. The menu counts include hidden people; the count on the button is the number currently plotted. Use the sort button beside it to order the list by creation order (newest first), name, age (descending, with missing ages last), or visibility (hidden first). Filtering and sorting last until the page is refreshed and do not change saved graph data.
 
+Use **Search people** above the add-person row to filter the list by name as you type; search is case-insensitive and does not change the graph. Use the clear button to show the full list again, subject to the relationship filter. Double-clicking a graph person hidden by search clears the search and opens their row. Search lasts until the page is refreshed and is not saved.
+
 The background selector is currently hidden; the previously selected background remains saved on this device. The Magic Eye pattern hides a heart; relax your gaze to see it.
 
 Each graph is one row in `public.graphs`; its creation time is recorded in `created_at`, and its JSON data contains the people, trait ratings, and selected axes. Row-level security restricts every read and write to the authenticated owner.

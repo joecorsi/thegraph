@@ -99,7 +99,7 @@
       .axis-y-low, .axis-y-high { left: calc(50% + 2px); }
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
-      .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
+      .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
       .chart-heading, .people-heading { gap: var(--control-gap); padding: var(--control-gap) 0 calc(var(--control-gap) + 5px); }
       .people-controls { display: flex; flex: 1 1 max-content; align-items: center; min-width: 0; gap: var(--control-gap); }
       #open-traits, #people-expand-all, .people-filter { flex: 1 1 auto; }
@@ -129,6 +129,13 @@
       .people-list { box-sizing: border-box; flex: 1 1 0; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
       .people-scroll-hint { padding: 3px 6px; border-radius: 2px; background: #efefef; color: #000; font: 12px Arial, sans-serif; text-align: center; }
       .people-scroll-hint.at-bottom { visibility: hidden; }
+      .people-search { position: relative; margin-bottom: var(--control-gap); }
+      #people-search { box-sizing: border-box; width: 100%; height: 28px; padding: 2px 30px; }
+      #people-search::-webkit-search-cancel-button { display: none; }
+      .people-search-icon, #people-search-clear { position: absolute; top: 50%; transform: translateY(-50%); }
+      .people-search-icon { left: 8px; width: 14px; height: 14px; color: #000; pointer-events: none; }
+      #people-search-clear { right: 4px; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: #000; cursor: pointer; }
+      #people-search-clear svg { width: 12px; height: 12px; vertical-align: middle; }
       #add-person-form { flex-wrap: nowrap; min-width: 0; gap: var(--control-gap); }
       #add-person-form button[type=submit] { width: var(--person-action-width); flex: none; }
       #new-person-name { flex: 1 1 auto; min-width: 0; max-width: 100%; box-sizing: border-box; }
@@ -345,6 +352,11 @@
                     </span>
                   </div>
                 </header>
+                <div class="people-search">
+                  <svg class="people-search-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m10.5 10.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  <input id="people-search" type="search" placeholder="Search people" aria-label="Search people" aria-controls="people-list">
+                  <button id="people-search-clear" type="button" aria-label="Clear search" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                </div>
                 <form id="add-person-form" class="add-row">
                   <input id="new-person-name" type="text" size="31" maxlength="40" placeholder="Name" aria-label="New person's name">
                   <span class="person-relationship">
@@ -592,6 +604,8 @@
         relationshipColors: document.getElementById("relationship-colors"),
         showNames: document.getElementById("show-names"),
         graphRelationships: document.querySelectorAll("[data-graph-relationship]"),
+        peopleSearch: document.getElementById("people-search"),
+        peopleSearchClear: document.getElementById("people-search-clear"),
         peopleList: document.getElementById("people-list"),
         peopleListWrap: document.getElementById("people-list-wrap"),
         peopleScrollHint: document.getElementById("people-scroll-hint"),
@@ -1358,7 +1372,7 @@
       el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
 
       function updatePeopleExpandButton() {
-        const cards = [...el.peopleList.children];
+        const cards = [...el.peopleList.children].filter(card => !card.hidden);
         const collapse = cards.some(card => card.open);
         const action = collapse ? "Collapse" : "Expand";
         el.peopleExpandAll.firstElementChild.textContent = `${action} all`;
@@ -1367,11 +1381,29 @@
       }
 
       el.peopleExpandAll.addEventListener("click", () => {
-        const cards = [...el.peopleList.children];
+        const cards = [...el.peopleList.children].filter(card => !card.hidden);
         const expand = !cards.some(card => card.open);
         graphOpenedPeople.clear();
         for (const card of cards) card.open = expand;
         updatePeopleExpandButton();
+      });
+
+      function updatePeopleSearch() {
+        const query = el.peopleSearch.value.trim().toLowerCase();
+        el.peopleSearchClear.hidden = !el.peopleSearch.value;
+        const people = new Map(state.people.map(person => [person.id, person]));
+        for (const card of el.peopleList.children) {
+          card.hidden = !people.get(card.dataset.personId).name.toLowerCase().includes(query);
+        }
+        updatePeopleExpandButton();
+        updatePeopleScrollHint();
+      }
+
+      el.peopleSearch.addEventListener("input", updatePeopleSearch);
+      el.peopleSearchClear.addEventListener("click", () => {
+        el.peopleSearch.value = "";
+        updatePeopleSearch();
+        el.peopleSearch.focus();
       });
 
       function setPersonDateBadge(badge, label, value) {
@@ -1463,7 +1495,11 @@
             scheduleSave();
           });
           nameInput.addEventListener("change", () => {
-            if (el.peopleSortSelect.value === "name") setTimeout(sortPeopleCards, 0);
+            setTimeout(() => {
+              if (!state) return;
+              if (el.peopleSortSelect.value === "name") sortPeopleCards();
+              updatePeopleSearch();
+            }, 0);
           });
           const relationship = el.newPersonRelationship.cloneNode(true);
           relationship.id = `person-relationship-${personIndex}`;
@@ -1643,8 +1679,7 @@
           peopleScrollObserver.observe(card);
         }
         el.peopleList.scrollTop = scrollTop;
-        updatePeopleExpandButton();
-        updatePeopleScrollHint();
+        updatePeopleSearch();
       }
 
       function sortedPeople() {
@@ -2017,6 +2052,10 @@
         if (!personId) return;
         const card = [...el.peopleList.children].find(item => item.dataset.personId === personId);
         if (!card) return;
+        if (card.hidden) {
+          el.peopleSearch.value = "";
+          updatePeopleSearch();
+        }
         card.open = true;
         graphOpenedPeople.add(personId);
         el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
@@ -2776,11 +2815,11 @@
         el.newPersonColor.style.backgroundColor = newPersonColor;
         render();
         const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
-        if (card) {
+        if (card && !card.hidden) {
           el.peopleList.scrollTop += card.getBoundingClientRect().top -
             el.peopleList.getBoundingClientRect().top - parseFloat(getComputedStyle(card).marginTop);
         } else {
-          showNotice(el.appNotice, "Person added, but not shown by the current relationship filter.");
+          showNotice(el.appNotice, "Person added, but not shown by the current filter or search.");
         }
         scheduleSave();
         el.newPersonName.focus();
