@@ -163,9 +163,11 @@
       .graph-options { position: relative; }
       .graph-options-toggle { position: relative; padding-right: 24px; padding-left: 2px; text-align: left; }
       .graph-options-toggle::after { content: ""; position: absolute; right: 6px; top: 50%; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid currentColor; transform: translateY(-50%); pointer-events: none; }
-      .graph-options-menu:not([hidden]) { position: absolute; z-index: 4; bottom: 100%; left: 0; min-width: 100%; width: max-content; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; background: #fff; color: #000; }
-      .graph-options-menu label { display: flex; align-items: center; padding: 1px 4px; white-space: nowrap; font: 13.3333px Arial, sans-serif; cursor: pointer; }
-      .graph-options-separator { display: block; border-top: 1px solid #767676; margin: 3px 4px; }
+      .graph-options-menu:not([hidden]) { position: absolute; z-index: 4; bottom: 100%; left: 0; min-width: 100%; width: max-content; box-sizing: border-box; border: 1px solid #767676; border-radius: 2px; padding: 6px; background: #fff; color: #000; }
+      .graph-options-menu label { display: flex; align-items: center; gap: 4px; white-space: nowrap; font: 13.3333px Arial, sans-serif; cursor: pointer; }
+      .graph-options-menu label + label { margin-top: 6px; }
+      .graph-options-menu input { margin: 0; }
+      .graph-options-separator { display: block; border-top: 1px solid #767676; margin: 6px 0; }
       .privacy-note { margin: 0 0 0 auto; text-align: right; font-size: .85em; }
       .person-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--control-gap); margin: var(--control-gap) 0 0 calc(10px + var(--control-gap)); }
       .person-dates .graph-badge { text-align: center; white-space: normal; overflow-wrap: anywhere; }
