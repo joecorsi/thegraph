@@ -163,6 +163,7 @@
       .person-caret::before { content: ""; position: absolute; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 6px solid; transform-origin: top left; }
       .person-card[open] .person-caret::before { transform: translate(10px, 2px) rotate(90deg); }
       .person-name { flex: 1; min-width: 0; }
+      .me-name { box-sizing: border-box; text-align: center; }
       .person-relationship { position: relative; flex: none; width: calc(5.75rem - 25px); min-width: 0; }
       .relationship-toggle { box-sizing: border-box; padding-left: 2px; padding-right: 15px; }
       .relationship-toggle.unclassified span, .person-relationship option[value=""] { font-style: italic; }
@@ -376,7 +377,6 @@
                     </span>
                   </div>
                 </header>
-                <div id="me-row"></div>
                 <div class="people-search">
                   <svg class="people-search-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m10.5 10.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                   <input id="people-search" type="search" placeholder="Search people" aria-label="Search people" aria-controls="people-list">
@@ -398,6 +398,7 @@
                   <button class="person-color" id="new-person-color" type="button" aria-label="Choose color for new person"></button>
                   <button class="button" type="submit" aria-label="Add person">Add</button>
                 </form>
+                <div id="me-row"></div>
                 <span id="trait-slider-instructions" class="visually-hidden">Use up and down arrows to move between trait sliders, and left and right arrows to adjust the score.</span>
                 <div class="people-list-wrap" id="people-list-wrap">
                   <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
@@ -1595,55 +1596,61 @@
           const caret = document.createElement("span");
           caret.className = "person-caret";
           caret.setAttribute("aria-hidden", "true");
-          const nameInput = document.createElement("input");
-          nameInput.className = "person-name";
-          nameInput.type = "text";
-          nameInput.maxLength = 40;
-          nameInput.placeholder = isMe ? "Me" : `Person ${personIndex + 1}`;
-          nameInput.value = person.name;
-          nameInput.readOnly = isMe;
-          nameInput.setAttribute("aria-label", isMe ? "Me" : `Name for person ${personIndex + 1}`);
-          nameInput.addEventListener("focus", () => {
-            focusedNamePersonId = person.id;
-            startNameFocusRing();
-            if (!selectNameInputPerson(person)) drawChart();
-          });
-          nameInput.addEventListener("click", () => {
-            selectNameInputPerson(person);
-            if (isMe) card.open = !card.open;
-          });
-          nameInput.addEventListener("blur", () => {
-            if (focusedNamePersonId === person.id) {
-              focusedNamePersonId = null;
-              stopNameFocusRing();
-              drawChart();
-            }
-          });
-          nameInput.addEventListener("input", () => {
-            if (person.name === nameInput.value) return;
-            person.name = nameInput.value;
-            markPersonModified(person);
-            summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
-            remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
-            updateVisibilityButton();
-            color.setAttribute("aria-label", `Change color for ${person.name || "person"}`);
-            relationship.setAttribute("aria-label", `Relationship for ${person.name || "person"}`);
-            relationshipDropdown.sync();
-            for (const slider of card.querySelectorAll("input[type=range]")) {
-              const trait = state.traits.find(item => item.id === slider.dataset.traitId);
-              slider.setAttribute("aria-label", `${traitLabel(trait)} score for ${person.name || "person"}`);
-            }
-            if (selectedPersonId === person.id) selectChartPerson(person);
-            else drawChart();
-            schedulePersonSave(person);
-          });
-          nameInput.addEventListener("change", () => {
-            setTimeout(() => {
-              if (!state) return;
-              if (el.peopleSortSelect.value === "name") sortPeopleCards();
-              updatePeopleSearch();
-            }, 0);
-          });
+          let nameControl;
+          if (isMe) {
+            nameControl = document.createElement("span");
+            nameControl.className = "person-name me-name graph-badge";
+            nameControl.textContent = "Me";
+            summary.addEventListener("click", () => selectNameInputPerson(person));
+          } else {
+            const nameInput = document.createElement("input");
+            nameControl = nameInput;
+            nameInput.className = "person-name";
+            nameInput.type = "text";
+            nameInput.maxLength = 40;
+            nameInput.placeholder = `Person ${personIndex + 1}`;
+            nameInput.value = person.name;
+            nameInput.setAttribute("aria-label", `Name for person ${personIndex + 1}`);
+            nameInput.addEventListener("focus", () => {
+              focusedNamePersonId = person.id;
+              startNameFocusRing();
+              if (!selectNameInputPerson(person)) drawChart();
+            });
+            nameInput.addEventListener("click", () => selectNameInputPerson(person));
+            nameInput.addEventListener("blur", () => {
+              if (focusedNamePersonId === person.id) {
+                focusedNamePersonId = null;
+                stopNameFocusRing();
+                drawChart();
+              }
+            });
+            nameInput.addEventListener("input", () => {
+              if (person.name === nameInput.value) return;
+              person.name = nameInput.value;
+              markPersonModified(person);
+              summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
+              remove.setAttribute("aria-label", `Remove ${person.name || "person"}`);
+              updateVisibilityButton();
+              color.setAttribute("aria-label", `Change color for ${person.name || "person"}`);
+              relationship.setAttribute("aria-label", `Relationship for ${person.name || "person"}`);
+              relationshipDropdown.sync();
+              for (const slider of card.querySelectorAll("input[type=range]")) {
+                const trait = state.traits.find(item => item.id === slider.dataset.traitId);
+                slider.setAttribute("aria-label", `${traitLabel(trait)} score for ${person.name || "person"}`);
+              }
+              if (selectedPersonId === person.id) selectChartPerson(person);
+              else drawChart();
+              schedulePersonSave(person);
+            });
+            nameInput.addEventListener("change", () => {
+              setTimeout(() => {
+                if (!state) return;
+                if (el.peopleSortSelect.value === "name") sortPeopleCards();
+                updatePeopleSearch();
+              }, 0);
+            });
+            nameInput.addEventListener("click", event => event.stopPropagation());
+          }
           const relationship = el.newPersonRelationship.cloneNode(true);
           relationship.id = `person-relationship-${personIndex}`;
           relationship.value = person.relationship ?? "";
@@ -1745,9 +1752,7 @@
             el.deletePersonNotice.classList.remove("visible");
             el.deletePersonDialog.showModal();
           });
-          for (const input of [nameInput, ageInput]) {
-            input.addEventListener("click", event => event.stopPropagation());
-          }
+          ageInput.addEventListener("click", event => event.stopPropagation());
           relationshipWrapper.addEventListener("click", event => {
             event.preventDefault();
             event.stopPropagation();
@@ -1761,10 +1766,10 @@
             event.stopPropagation();
             openColorDialog(person, color);
           });
-          for (const control of [nameInput, relationshipWrapper, ageInput, color, visibility, remove]) {
+          for (const control of [nameControl, relationshipWrapper, ageInput, color, visibility, remove]) {
             control.addEventListener("keydown", event => event.stopPropagation());
           }
-          summaryName.append(caret, nameInput, relationshipWrapper, ageInput, color);
+          summaryName.append(caret, nameControl, relationshipWrapper, ageInput, color);
           actions.append(visibility);
           if (!isMe) actions.append(remove);
           summary.append(summaryName, actions);
