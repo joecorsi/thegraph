@@ -39,7 +39,7 @@ Each graph is one row in `public.graphs`; its creation time is recorded in `crea
 ## Supabase setup
 
 1. Create a Supabase project.
-2. In the Supabase SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql). For an existing installation, first deploy this version of the app, then run [`supabase/migrate_funny_trait.sql`](./supabase/migrate_funny_trait.sql) once. It backs up graph and Me data in a restricted database schema, preserves graph modification dates, and blocks saves from outdated tabs until they reload.
+2. For a new installation, run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor. For an existing installation, first deploy this version of the app, rerun the schema, then run [`supabase/migrate_funny_trait.sql`](./supabase/migrate_funny_trait.sql) once. The migration backs up graph and Me data in a restricted database schema, preserves graph modification dates, and blocks saves from outdated tabs until they reload.
 3. In **Authentication → Providers**, enable Google and email. Configure Google OAuth credentials in Supabase; the provider secret stays in Supabase and is never entered into this app.
 4. In **Authentication → URL Configuration**, set the site URL to `https://joecorsi.github.io/thepear/` and allow that URL as a redirect. For local development, also allow `http://localhost:8000/` and `http://127.0.0.1:8000/`.
 5. In this directory, start a static server:
