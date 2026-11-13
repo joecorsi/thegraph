@@ -88,7 +88,11 @@
       .axis-toggle { appearance: none; border: 0; padding: 3px 26px 3px 8px; background: transparent; color: inherit; cursor: pointer; font: 13.333px Arial, sans-serif; }
       .axis-toggle:focus-visible { outline: 2px solid; outline-offset: 1px; }
       .axis-toggle::after { content: ""; right: 10px; width: 6px; height: 6px; border-right: 1px solid; border-bottom: 1px solid; transform: translateY(-65%) rotate(45deg); pointer-events: none; }
-      .axis-end select { top: 100%; left: 0; }
+      .axis-end select { top: 100%; left: 0; overflow-y: scroll; scrollbar-gutter: stable; }
+      .axis-end select::-webkit-scrollbar { width: 12px; }
+      .axis-end select::-webkit-scrollbar-track { background: #efefef; }
+      .axis-end select::-webkit-scrollbar-thumb { border: 2px solid #efefef; border-radius: 6px; background: #999; }
+      @supports (-moz-appearance: none) { .axis-end select { scrollbar-color: #999 #efefef; } }
       .axis-x-low, .axis-x-high { top: 50%; transform: translateY(calc(-100% - 3px)); }
       .axis-x-low { left: var(--plot-inset); }
       .axis-x-high { right: var(--plot-inset); }
