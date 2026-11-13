@@ -91,10 +91,13 @@
       .chart-frame:focus-within { border-color: #000; }
       #chart { display: block; width: 100%; aspect-ratio: 1; border-radius: inherit; touch-action: none; }
       #chart:focus { outline: none; }
+      .chart-label-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+      #chart-labels { display: block; width: 100%; height: 100%; }
+      .chart-label-hit { position: absolute; pointer-events: auto; touch-action: none; }
       .chart-hint { position: absolute; left: 8px; top: 6px; max-width: calc(50% - 16px); margin: 0; color: #000; font-size: .85em; pointer-events: none; }
       .chart-hint.drag-hint { opacity: .5; }
       .axis-end { position: absolute; max-width: calc(50% - var(--plot-inset) - 12px); color: #000; }
-      .axis-end:focus-within { z-index: 3; }
+      .axis-end:has(select:not([hidden])) { z-index: 3; }
       .axis-toggle { appearance: none; border: 0; padding: 3px 26px 3px 8px; background: transparent; color: inherit; cursor: pointer; font: 13.333px Arial, sans-serif; }
       .axis-toggle:focus-visible { outline: 2px solid; outline-offset: 1px; }
       .axis-toggle::after { content: ""; right: 10px; width: 6px; height: 6px; border-right: 1px solid; border-bottom: 1px solid; transform: translateY(-65%) rotate(45deg); pointer-events: none; }
@@ -330,6 +333,7 @@
                     <span class="axis-end axis-y-low"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="y-axis-low"><span></span></button><select id="y-axis-low" aria-label="Vertical axis trait, bottom end" size="9" hidden></select></span>
                     <span class="axis-end axis-y-high"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="y-axis-high"><span></span></button><select id="y-axis-high" aria-label="Vertical axis trait, top end" size="9" hidden></select></span>
                     <p class="chart-hint drag-hint">Drag a person to adjust</p>
+                    <div class="chart-label-layer" aria-hidden="true"><canvas id="chart-labels"></canvas><div class="chart-label-hit" hidden></div><div class="chart-label-hit" hidden></div></div>
                   </div>
                   <div class="chart-footer">
                     <span class="graph-footer-controls">
@@ -640,6 +644,8 @@
         xAxes: [document.getElementById("x-axis-low"), document.getElementById("x-axis-high")],
         yAxes: [document.getElementById("y-axis-low"), document.getElementById("y-axis-high")],
         chart: document.getElementById("chart"),
+        chartLabels: document.getElementById("chart-labels"),
+        chartLabelHitAreas: document.querySelectorAll(".chart-label-hit"),
         chartHint: document.querySelector(".chart-hint"),
         graphOptionsToggle: document.getElementById("graph-options-toggle"),
         graphOptionsMenu: document.getElementById("graph-options-menu"),
@@ -2147,8 +2153,11 @@
         }, 0);
       }, true);
 
-      el.chart.addEventListener("pointerdown", event => {
-        if (!event.isPrimary || event.button !== 0 || chartDrag) return;
+      const chartFrame = el.chart.parentElement;
+      const isChartTarget = target => target === el.chart || target.classList.contains("chart-label-hit");
+
+      chartFrame.addEventListener("pointerdown", event => {
+        if (!isChartTarget(event.target) || !event.isPrimary || event.button !== 0 || chartDrag) return;
         const point = pointerPosition(event);
         const { person, personId } = chartHitAtPoint(point);
         const selected = state ? chartPeople().find(item => item.id === personId) ?? null : null;
@@ -2168,11 +2177,19 @@
           offsetY: point.y - position.y
         };
         el.chart.setPointerCapture(event.pointerId);
-        el.chart.style.cursor = "move";
+        chartFrame.style.cursor = "move";
         event.preventDefault();
       });
 
-      el.chart.addEventListener("pointermove", event => {
+      chartFrame.addEventListener("pointermove", event => {
+        if (!chartDrag && !isChartTarget(event.target)) {
+          if (hoveredPersonId !== null) {
+            hoveredPersonId = null;
+            drawChart();
+          }
+          chartFrame.style.cursor = "";
+          return;
+        }
         const point = pointerPosition(event);
         if (!chartDrag) {
           const { person: pointPerson, personId } = chartHitAtPoint(point);
@@ -2180,7 +2197,7 @@
             hoveredPersonId = personId;
             drawChart();
           }
-          el.chart.style.cursor = pointPerson && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) ? "move" : "";
+          chartFrame.style.cursor = pointPerson && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) ? "move" : "";
           return;
         }
         if (event.pointerId !== chartDrag.pointerId) return;
@@ -2213,23 +2230,23 @@
         if (!chartDrag || event.pointerId !== chartDrag.pointerId) return;
         chartDrag = null;
         hoveredPersonId = null;
-        el.chart.style.cursor = event.type === "pointerup" && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) &&
+        chartFrame.style.cursor = event.type === "pointerup" && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) &&
           chartHitAtPoint(pointerPosition(event)).person ? "move" : "";
         drawChart();
       }
 
-      el.chart.addEventListener("pointerleave", () => {
+      chartFrame.addEventListener("pointerleave", () => {
         if (!chartDrag) {
-          el.chart.style.cursor = "";
+          chartFrame.style.cursor = "";
           if (hoveredPersonId !== null) {
             hoveredPersonId = null;
             drawChart();
           }
         }
       });
-      el.chart.addEventListener("pointerup", endChartDrag);
-      el.chart.addEventListener("pointercancel", endChartDrag);
-      el.chart.addEventListener("lostpointercapture", endChartDrag);
+      chartFrame.addEventListener("pointerup", endChartDrag);
+      chartFrame.addEventListener("pointercancel", endChartDrag);
+      chartFrame.addEventListener("lostpointercapture", endChartDrag);
       el.chart.addEventListener("keydown", event => {
         if (event.key === "Escape" && (selectedPersonId || foregroundPersonId)) {
           foregroundPersonId = null;
@@ -2260,7 +2277,8 @@
         drawChart();
         schedulePersonSave(person);
       });
-      el.chart.addEventListener("dblclick", event => {
+      chartFrame.addEventListener("dblclick", event => {
+        if (!isChartTarget(event.target)) return;
         const point = pointerPosition(event);
         const { personId } = chartHitAtPoint(point);
         if (!personId) return;
@@ -2284,6 +2302,8 @@
           if (placementRingFrame !== null) cancelAnimationFrame(placementRingFrame);
           placementRingFrame = null;
           chartLabelHits = [];
+          for (const hit of el.chartLabelHitAreas) hit.hidden = true;
+          el.chartLabels.getContext("2d").clearRect(0, 0, el.chartLabels.width, el.chartLabels.height);
           return;
         }
         const width = bounds.width;
@@ -2291,8 +2311,12 @@
         const ratio = window.devicePixelRatio || 1;
         canvas.width = Math.round(width * ratio);
         canvas.height = Math.round(height * ratio);
+        el.chartLabels.width = canvas.width;
+        el.chartLabels.height = canvas.height;
         const context = canvas.getContext("2d");
+        const labelContext = el.chartLabels.getContext("2d");
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        labelContext.setTransform(ratio, 0, 0, ratio, 0, 0);
         context.clearRect(0, 0, width, height);
         context.fillStyle = "#fff";
         context.fillRect(0, 0, width, height);
@@ -2370,6 +2394,16 @@
           return label.nameBox.personId === hoveredPersonId
             ? [{ ...label.hit, isHoverAnchor: true }, label.nameHit] : [label.nameHit];
         });
+        const raisedHits = labels.filter(label => label.nameHit).map(label => label.nameHit);
+        el.chartLabelHitAreas.forEach((element, index) => {
+          const hit = raisedHits[index];
+          element.hidden = !hit;
+          if (!hit) return;
+          element.style.left = `${hit.left}px`;
+          element.style.top = `${hit.top}px`;
+          element.style.width = `${hit.right - hit.left}px`;
+          element.style.height = `${hit.bottom - hit.top}px`;
+        });
         const hoveredIndex = plotted.findIndex(({ person }) => person.id === (hoveredPersonId ?? focusedNamePersonId ?? selectedPersonId));
         const foregroundIndex = plotted.findIndex(({ person }) => person.id === foregroundPersonId);
         const focusedIndex = plotted.findIndex(({ person }) => person.id === focusedNamePersonId);
@@ -2391,38 +2425,38 @@
           if (index !== focusedIndex && index !== selectedIndex) drawDot(index);
         });
         context.globalAlpha = 1;
-        const drawLabel = (index, hovered = false) => {
+        const drawLabel = (index, hovered = false, target = context) => {
           const { text, x: labelX, y: labelY, hit, nameBox } = labels[index];
-          context.globalAlpha = hoveredIndex !== -1 && !hovered && index !== focusedIndex ? 0.4 : 1;
+          target.globalAlpha = hoveredIndex !== -1 && !hovered && index !== focusedIndex ? 0.4 : 1;
           if (hovered && nameBox) {
             const color = state.colorByRelationship ? relationshipColor(plotted[index].person) : "#000";
-            context.save();
-            context.font = "bold 16px serif";
-            context.textBaseline = "alphabetic";
-            context.fillStyle = "#fff";
-            context.strokeStyle = color;
-            context.lineWidth = 1;
-            context.beginPath();
-            context.roundRect(nameBox.left + .5, nameBox.top + .5,
+            target.save();
+            target.font = "bold 16px serif";
+            target.textBaseline = "alphabetic";
+            target.fillStyle = "#fff";
+            target.strokeStyle = color;
+            target.lineWidth = 1;
+            target.beginPath();
+            target.roundRect(nameBox.left + .5, nameBox.top + .5,
               nameBox.right - nameBox.left - 1, nameBox.bottom - nameBox.top - 1, 3);
-            context.fill();
-            context.stroke();
-            context.fillStyle = color;
-            context.fillText(text, nameBox.left + 6, (nameBox.top + nameBox.bottom) / 2 + nameBox.textOffset,
+            target.fill();
+            target.stroke();
+            target.fillStyle = color;
+            target.fillText(text, nameBox.left + 6, (nameBox.top + nameBox.bottom) / 2 + nameBox.textOffset,
               nameBox.right - nameBox.left - 12);
-            context.restore();
+            target.restore();
             return;
           }
-          context.lineWidth = 3;
-          context.strokeStyle = "#fff";
+          target.lineWidth = 3;
+          target.strokeStyle = "#fff";
           if (hovered) {
-            context.fillStyle = "#fff";
-            context.fillRect(hit.left, hit.top, hit.right - hit.left, hit.bottom - hit.top);
+            target.fillStyle = "#fff";
+            target.fillRect(hit.left, hit.top, hit.right - hit.left, hit.bottom - hit.top);
           }
-          context.strokeText(text, labelX, labelY);
-          context.fillStyle = state.colorByRelationship
+          target.strokeText(text, labelX, labelY);
+          target.fillStyle = state.colorByRelationship
             ? relationshipColor(plotted[index].person) : "#000";
-          context.fillText(text, labelX, labelY);
+          target.fillText(text, labelX, labelY);
         };
         if (!state.hideNames) {
           plotted.forEach((_, index) => {
@@ -2476,6 +2510,12 @@
         }
         if (hoveredIndex !== -1 && hoveredIndex !== selectedIndex && hoveredPersonId !== null) drawHighlight(hoveredIndex);
         context.globalAlpha = 1;
+        if (!state.hideNames) {
+          if (selectedIndex !== -1 && labels[selectedIndex].nameBox) drawLabel(selectedIndex, true, labelContext);
+          if (hoveredIndex !== -1 && hoveredIndex !== selectedIndex && labels[hoveredIndex].nameBox) {
+            drawLabel(hoveredIndex, true, labelContext);
+          }
+        }
         if (awaitingPlacement.length && !reducedMotion.matches) {
           if (placementRingFrame === null) {
             placementRingFrame = requestAnimationFrame(() => {
