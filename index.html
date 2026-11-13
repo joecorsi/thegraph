@@ -184,7 +184,6 @@
       .person-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--control-gap); }
       #me-row .person-card { margin-bottom: 0; }
       #me-row .person-actions { grid-template-columns: 1fr; }
-      #me-row .me-details { max-height: min(30vh, 300px); overflow-y: auto; overscroll-behavior: contain; }
       .person-actions button { box-sizing: border-box; width: 100%; min-width: 0; }
       .person-actions button, .graph-action { display: grid; place-items: center; padding: 1px 3px; }
       /* Preserve the height of the text buttons while centering the icons. */
@@ -415,7 +414,10 @@
                 <div id="me-row"></div>
                 <span id="trait-slider-instructions" class="visually-hidden">Use up and down arrows to move between trait sliders, and left and right arrows to adjust the score.</span>
                 <div class="people-list-wrap" id="people-list-wrap">
-                  <div id="people-list" class="people-list" role="region" aria-label="People list" tabindex="0"></div>
+                  <div id="people-scroll" class="people-list" role="region" aria-label="People list" tabindex="0">
+                    <div id="me-details" hidden></div>
+                    <div id="people-list"></div>
+                  </div>
                   <div class="people-scroll-hint" id="people-scroll-hint" hidden>Scroll for more</div>
                 </div>
               </div>
@@ -666,9 +668,11 @@
         showNames: document.getElementById("show-names"),
         graphRelationships: document.querySelectorAll("[data-graph-relationship]"),
         meRow: document.getElementById("me-row"),
+        meDetails: document.getElementById("me-details"),
         peopleSearch: document.getElementById("people-search"),
         peopleSearchClear: document.getElementById("people-search-clear"),
         peopleList: document.getElementById("people-list"),
+        peopleScroll: document.getElementById("people-scroll"),
         peopleListWrap: document.getElementById("people-list-wrap"),
         peopleScrollHint: document.getElementById("people-scroll-hint"),
         dimensions: document.getElementById("dimensions"),
@@ -1555,13 +1559,13 @@
 
       function updatePeopleScrollHint() {
         el.peopleScrollHint.hidden = el.peopleListWrap.clientHeight === 0 ||
-          el.peopleList.scrollHeight - el.peopleListWrap.clientHeight <= 1;
+          el.peopleScroll.scrollHeight - el.peopleListWrap.clientHeight <= 1;
         el.peopleScrollHint.classList.toggle("at-bottom",
-          el.peopleList.scrollHeight - el.peopleList.scrollTop - el.peopleList.clientHeight <= 1);
+          el.peopleScroll.scrollHeight - el.peopleScroll.scrollTop - el.peopleScroll.clientHeight <= 1);
       }
 
       const peopleScrollObserver = new ResizeObserver(updatePeopleScrollHint);
-      el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
+      el.peopleScroll.addEventListener("scroll", updatePeopleScrollHint);
 
       function updatePeopleExpandButton() {
         const cards = [...el.peopleList.children].filter(card => !card.hidden);
@@ -1613,7 +1617,7 @@
       }
 
       function updatePersonModifiedBadge(person) {
-        const card = personCard(person.id);
+        const card = person.id === ME_ID ? el.meDetails : personCard(person.id);
         const badge = card?.querySelector(".person-modified-date");
         if (badge) setPersonDateBadge(badge, "Modified", person.modifiedAt);
       }
@@ -1631,14 +1635,15 @@
         updatePeopleFilter();
         const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
         if (el.meRow.querySelector("details[open]")) openPeople.add(ME_ID);
-        const scrollTop = el.peopleList.scrollTop;
-        const meScrollTop = el.meRow.querySelector(".me-details")?.scrollTop ?? 0;
+        const scrollTop = el.peopleScroll.scrollTop;
         peopleScrollObserver.disconnect();
-        peopleScrollObserver.observe(el.peopleList);
+        peopleScrollObserver.observe(el.peopleScroll);
+        peopleScrollObserver.observe(el.meDetails);
         personDropdowns.forEach(dropdown => dropdown.destroy());
         personDropdowns = [];
         el.peopleList.replaceChildren();
         el.meRow.replaceChildren();
+        el.meDetails.replaceChildren();
         for (const [personIndex, person] of [[-1, mePerson], ...sortedPeople()]) {
           const isMe = person === mePerson;
           const card = document.createElement("details");
@@ -1658,13 +1663,19 @@
             caret.type = "button";
             caret.setAttribute("aria-label", "Toggle Me sliders");
             caret.setAttribute("aria-expanded", String(card.open));
+            caret.setAttribute("aria-controls", "me-details");
             caret.addEventListener("click", event => {
               event.preventDefault();
               event.stopPropagation();
               card.open = !card.open;
               caret.setAttribute("aria-expanded", String(card.open));
+              if (card.open) el.peopleScroll.scrollTop = 0;
             });
-            card.addEventListener("toggle", () => caret.setAttribute("aria-expanded", String(card.open)));
+            card.addEventListener("toggle", () => {
+              if (!card.isConnected) return;
+              caret.setAttribute("aria-expanded", String(card.open));
+              el.meDetails.hidden = !card.open;
+            });
             nameControl = document.createElement("span");
             nameControl.className = "person-name me-name graph-badge";
             nameControl.textContent = "Me";
@@ -1695,6 +1706,7 @@
             });
             summary.addEventListener("click", event => {
               if (event.target !== summary || event.detail !== 0) event.preventDefault();
+              else if (!card.open) el.peopleScroll.scrollTop = 0;
             });
           } else {
             caret.setAttribute("aria-hidden", "true");
@@ -1920,19 +1932,17 @@
             traitList.append(row);
           }
           if (isMe) {
-            const details = document.createElement("div");
-            details.className = "me-details";
-            details.append(dates, traitList);
-            card.append(summary, details);
+            el.meDetails.append(dates, traitList);
+            el.meDetails.hidden = !card.open;
+            card.append(summary);
             el.meRow.append(card);
-            details.scrollTop = meScrollTop;
           } else {
             card.append(summary, dates, traitList);
             el.peopleList.append(card);
             peopleScrollObserver.observe(card);
           }
         }
-        el.peopleList.scrollTop = scrollTop;
+        el.peopleScroll.scrollTop = scrollTop;
         updatePeopleSearch();
       }
 
@@ -2131,7 +2141,7 @@
       }
 
       function updatePersonSliders(person) {
-        const card = personCard(person.id);
+        const card = person.id === ME_ID ? el.meDetails : personCard(person.id);
         if (!card) return;
         for (const slider of card.querySelectorAll("input[type=range]")) {
           slider.value = String(person.values[slider.dataset.traitId]);
@@ -2346,9 +2356,8 @@
         }
         card.open = true;
         graphOpenedPeople.add(personId);
-        if (personId !== ME_ID) {
-          el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
-        }
+        if (personId === ME_ID) el.peopleScroll.scrollTop = 0;
+        else el.peopleScroll.scrollTop += card.getBoundingClientRect().top - el.peopleScroll.getBoundingClientRect().top;
       });
 
       function drawChart() {
@@ -2830,7 +2839,7 @@
         state.people = state.people.filter(person => person.id !== personId);
         render();
         scheduleSave();
-        el.peopleList.focus({ preventScroll: true });
+        el.peopleScroll.focus({ preventScroll: true });
       });
 
       el.newPersonColor.addEventListener("click", () => openColorDialog(null, el.newPersonColor));
@@ -3151,8 +3160,8 @@
         render();
         const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
         if (card && !card.hidden) {
-          el.peopleList.scrollTop += card.getBoundingClientRect().top -
-            el.peopleList.getBoundingClientRect().top - parseFloat(getComputedStyle(card).marginTop);
+          el.peopleScroll.scrollTop += card.getBoundingClientRect().top -
+            el.peopleScroll.getBoundingClientRect().top - parseFloat(getComputedStyle(card).marginTop);
         } else {
           showNotice(el.appNotice, "Person added, but not shown by the current filter or search.");
         }
