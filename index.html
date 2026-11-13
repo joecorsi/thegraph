@@ -562,6 +562,7 @@
         key: "sb_publishable_vsbBzlNtb1Aa0z6sAGG8WA_43xh9JQ_"
       };
       const COLORS = ["#145c92", "#c52d83", "#468949", "#dc7720", "#744aa0", "#009a9a", "#ba3a35", "#5555a4"];
+      const FUNNY_TRAIT = { id: "not-funny-funny", name: "Funny", opposite: "Not funny" };
       const DEFAULT_TRAITS = [
         { id: "openness", name: "Open", opposite: "Closed" },
         { id: "sociability", name: "Extrovert", opposite: "Introvert" },
@@ -576,7 +577,8 @@
         { id: "reserved-talkative", name: "Talkative", opposite: "Reserved" },
         { id: "indoor-outdoor-cat", name: "Outdoor cat", opposite: "Indoor cat" },
         { id: "distracted-focused", name: "Focused", opposite: "Distracted" },
-        { id: "grounded-head-in-clouds", name: "Head in clouds", opposite: "Grounded" }
+        { id: "grounded-head-in-clouds", name: "Head in clouds", opposite: "Grounded" },
+        FUNNY_TRAIT
       ];
 
       const el = {
@@ -737,6 +739,7 @@
 
       function initialState() {
         return {
+          funnyTraitMigrated: true,
           traits: DEFAULT_TRAITS.map(trait => ({ ...trait })),
           people: [],
           xTrait: "lame-cool",
@@ -1062,7 +1065,17 @@
         if (!isValidState(value)) {
           throw new Error("This graph's saved data is not in the expected format.");
         }
+        if (value.funnyTraitMigrated !== undefined && value.funnyTraitMigrated !== true) {
+          throw new Error("This graph has an incompatible trait migration marker.");
+        }
         const traits = value.traits.filter(trait => trait.name.trim());
+        if (value.funnyTraitMigrated !== true) {
+          const existing = traits.find(trait => trait.id === FUNNY_TRAIT.id);
+          if (existing && (existing.name !== FUNNY_TRAIT.name || existing.opposite !== FUNNY_TRAIT.opposite)) {
+            throw new Error("This graph already uses the new trait's ID.");
+          }
+          if (!existing) traits.push({ ...FUNNY_TRAIT });
+        }
         const traitIds = new Set(traits.map(trait => trait.id));
         const people = value.people.map((person, index) => ({
           ...person,
@@ -1073,6 +1086,7 @@
           }))
         }));
         return {
+          funnyTraitMigrated: true,
           traits,
           people,
           xTrait: value.xTrait === AGE_AXIS || traitIds.has(value.xTrait) ? value.xTrait : traits[0]?.id,
@@ -1254,11 +1268,12 @@
         const profile = data?.data ?? { id: ME_ID, name: "Me", color: COLORS[0], values: {} };
         if (!isValidState({ ...initialState(), people: [profile] }) ||
             profile.id !== ME_ID || profile.name !== "Me" ||
+            (profile.funnyTraitMigrated !== undefined && profile.funnyTraitMigrated !== true) ||
             Array.isArray(profile.values) ||
             Object.values(profile.values).some(value => typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 100)) {
           throw new Error("Your Me profile is not in the expected format.");
         }
-        mePerson = { ...profile, color: profile.color ?? COLORS[0], values: { ...profile.values } };
+        mePerson = { ...profile, funnyTraitMigrated: true, color: profile.color ?? COLORS[0], values: { ...profile.values } };
         if (user.created_at && Number.isFinite(Date.parse(user.created_at))) mePerson.addedAt = user.created_at;
         else delete mePerson.addedAt;
       }
@@ -2944,18 +2959,22 @@
           showNotice(el.traitsNotice, "Add the new trait or clear its fields before saving.");
           return;
         }
-        const names = new Set();
+        const names = new Map();
+        const originalNames = new Map(state.traits.map(trait => [trait.id, trait.name.trim().toLowerCase()]));
         for (const trait of traitsDraft) {
           const name = trait.name.trim();
           if (!name || (trait.opposite !== undefined && !trait.opposite.trim())) {
             showNotice(el.traitsNotice, "Each trait needs a name and a low end.");
             return;
           }
-          if (names.has(name.toLowerCase())) {
+          const key = name.toLowerCase();
+          const matching = names.get(key) ?? [];
+          matching.push(trait);
+          names.set(key, matching);
+          if (matching.length > 1 && matching.some(item => originalNames.get(item.id) !== key)) {
             showNotice(el.traitsNotice, "Each trait needs a unique name.");
             return;
           }
-          names.add(name.toLowerCase());
         }
         const previousState = state;
         state = normalizeState({

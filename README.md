@@ -24,7 +24,7 @@ The **Me** row stays below the add-person row and shares your age, color, visibi
 
 Use the **Traits** button to add, rename, remove, or swap the ends of traits for the current graph, then choose **Save** or **Cancel**. New traits appear at the top of the list, which scrolls when it exceeds the available dialog height. Swapping ends leaves scores unchanged. Existing traits keep their scores and names as the high end; their low end is shown as "Low" until you name it.
 
-New graphs include the default traits and start with Lame–Cool on the X axis and Benevolent–Malevolent on the Y axis. Changing the defaults does not alter existing saved graphs.
+New graphs include the default traits, including Not funny–Funny, and start with Lame–Cool on the X axis and Benevolent–Malevolent on the Y axis. Existing graphs receive Not funny–Funny once, with a neutral score of 50 until changed; an existing custom Funny trait remains separate. You can remove the new trait from a graph without it being added again.
 
 In the New graph dialog, check **Copy people and traits from current graph** to copy its people, ratings, traits, and selected axes into the new graph. The copy is independent of the original; other graph options start at their defaults.
 
@@ -39,7 +39,7 @@ Each graph is one row in `public.graphs`; its creation time is recorded in `crea
 ## Supabase setup
 
 1. Create a Supabase project.
-2. In the Supabase SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql). Existing installations should rerun it to create the Me profile table and its policies.
+2. In the Supabase SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql). For an existing installation, first deploy this version of the app, then run [`supabase/migrate_funny_trait.sql`](./supabase/migrate_funny_trait.sql) once. It backs up graph and Me data in a restricted database schema, preserves graph modification dates, and blocks saves from outdated tabs until they reload.
 3. In **Authentication → Providers**, enable Google and email. Configure Google OAuth credentials in Supabase; the provider secret stays in Supabase and is never entered into this app.
 4. In **Authentication → URL Configuration**, set the site URL to `https://joecorsi.github.io/thepear/` and allow that URL as a redirect. For local development, also allow `http://localhost:8000/` and `http://127.0.0.1:8000/`.
 5. In this directory, start a static server:

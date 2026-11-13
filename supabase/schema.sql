@@ -79,3 +79,28 @@ create policy "Users can update their own Me profile"
   on public.me_profiles for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+
+create or replace function public.require_funny_trait_version()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.data -> 'funnyTraitMigrated' is distinct from 'true'::jsonb then
+    if tg_op = 'INSERT' or old.data -> 'funnyTraitMigrated' = 'true'::jsonb then
+      raise exception 'This tab is out of date. Reload the page before saving.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists require_funny_trait_version on public.graphs;
+create trigger require_funny_trait_version
+  before insert or update on public.graphs
+  for each row execute function public.require_funny_trait_version();
+
+drop trigger if exists require_funny_trait_version on public.me_profiles;
+create trigger require_funny_trait_version
+  before insert or update on public.me_profiles
+  for each row execute function public.require_funny_trait_version();
