@@ -2156,6 +2156,14 @@
       const chartFrame = el.chart.parentElement;
       const isChartTarget = target => target === el.chart || target.classList.contains("chart-label-hit");
 
+      chartFrame.addEventListener("click", event => {
+        if (event.button !== 0 || !event.target.closest(".axis-end")) return;
+        if (!selectedPersonId && !foregroundPersonId && !hoveredPersonId) return;
+        foregroundPersonId = null;
+        hoveredPersonId = null;
+        selectChartPerson(null);
+      });
+
       chartFrame.addEventListener("pointerdown", event => {
         if (!isChartTarget(event.target) || !event.isPrimary || event.button !== 0 || chartDrag) return;
         const point = pointerPosition(event);
