@@ -16,7 +16,7 @@ When names are shown, hovered and selected graph names appear in a larger raised
 
 Use **Shuffle axes** beside Options to randomly choose two different traits, excluding the current pair. The new axes are saved with the graph. The button is disabled if fewer than two traits are available. Hover over or focus the info icon at the bottom right for a graph controls tip.
 
-Use **Expand all** to open every currently listed person, including Me, or **Collapse all** to close any open people. The people list shows **Scroll for more** when there are entries or trait sliders below the visible area. When a trait slider is focused, use Up and Down to move between that person's sliders and Left and Right to adjust the score. The focused slider is blue.
+Use **Expand all** to open every currently listed person, including Me, or **Collapse all** to close any open people. A black line appears at the bottom of the people list when there are entries or trait sliders below the visible area. When a trait slider is focused, use Up and Down to move between that person's sliders and Left and Right to adjust the score. The focused slider is blue.
 
 Expanded people show their added and last-modified dates. Existing people have unknown dates until edited; copying people to another graph preserves their dates. Person edits, including graph movements and visibility changes, update the modified date.
 

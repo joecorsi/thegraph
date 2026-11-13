@@ -150,7 +150,7 @@
       #people-sort-toggle .sort-size { visibility: hidden; }
       .people-list-wrap { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
       .people-list { box-sizing: border-box; flex: 1 1 0; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-      .people-scroll-hint { padding: 3px 6px; border-radius: 2px; background: #efefef; color: #000; font: 12px Arial, sans-serif; text-align: center; }
+      .people-scroll-hint { flex: none; border-top: 1px solid #000; }
       .people-scroll-hint.at-bottom { visibility: hidden; }
       .people-search { position: relative; margin-bottom: var(--control-gap); }
       #people-search { appearance: none; display: block; box-sizing: border-box; width: 100%; height: 28px; border: 1px solid rgba(0, 0, 0, .15); border-radius: 2px; padding: 2px 30px 0; }
@@ -424,7 +424,7 @@
                     <div id="me-row"></div>
                     <div id="people-list"></div>
                   </div>
-                  <div class="people-scroll-hint" id="people-scroll-hint" hidden>Scroll for more</div>
+                  <div class="people-scroll-hint" id="people-scroll-hint" aria-hidden="true" hidden></div>
                 </div>
               </div>
               <div id="app-notice" class="notice" role="status" aria-live="polite"></div>
