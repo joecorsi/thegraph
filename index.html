@@ -161,9 +161,12 @@
       .summary-name { display: flex; align-items: center; gap: var(--control-gap); min-width: 0; }
       .person-caret { position: relative; flex: none; width: 10px; height: 10px; }
       .person-caret::before { content: ""; position: absolute; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 6px solid; transform-origin: top left; }
+      button.person-caret { border: 0; padding: 0; background: transparent; color: inherit; cursor: pointer; }
+      button.person-caret::before { top: 0; left: 0; }
       .person-card[open] .person-caret::before { transform: translate(10px, 2px) rotate(90deg); }
       .person-name { flex: 1; min-width: 0; }
       .me-name { box-sizing: border-box; font-weight: bold; text-align: center; }
+      .me-name:focus-visible { outline: 2px solid #000; outline-offset: 1px; }
       .person-relationship { position: relative; flex: none; width: calc(5.75rem - 25px); min-width: 0; }
       .relationship-toggle { box-sizing: border-box; padding-left: 2px; padding-right: 15px; }
       .relationship-toggle.unclassified span, .person-relationship option[value=""] { font-style: italic; }
@@ -1438,7 +1441,8 @@
         });
         const luminance = .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2];
         badge.style.backgroundColor = color;
-        badge.style.color = (luminance + .05) / .05 >= 1.05 / (luminance + .05) ? "#000" : "#fff";
+        // Prefer white for mid-tone colors when it still has sufficient contrast.
+        badge.style.color = 1.05 / (luminance + .05) >= 4.4 ? "#fff" : "#000";
       }
 
       function updateColorPicker(updateColor = true) {
@@ -1604,17 +1608,54 @@
           summary.setAttribute("aria-label", person.name.trim() || `Person ${personIndex + 1}`);
           const summaryName = document.createElement("span");
           summaryName.className = "summary-name";
-          const caret = document.createElement("span");
+          const caret = document.createElement(isMe ? "button" : "span");
           caret.className = "person-caret";
-          caret.setAttribute("aria-hidden", "true");
           let nameControl;
           if (isMe) {
+            caret.type = "button";
+            caret.setAttribute("aria-label", "Toggle Me sliders");
+            caret.setAttribute("aria-expanded", String(card.open));
+            caret.addEventListener("click", event => {
+              event.preventDefault();
+              event.stopPropagation();
+              card.open = !card.open;
+              caret.setAttribute("aria-expanded", String(card.open));
+            });
+            card.addEventListener("toggle", () => caret.setAttribute("aria-expanded", String(card.open)));
             nameControl = document.createElement("span");
             nameControl.className = "person-name me-name graph-badge";
             nameControl.textContent = "Me";
+            nameControl.setAttribute("role", "button");
+            nameControl.setAttribute("aria-label", "Select Me on graph");
+            nameControl.tabIndex = 0;
             setMeBadgeColor(nameControl, person.color);
-            summary.addEventListener("click", () => selectNameInputPerson(person));
+            nameControl.addEventListener("focus", () => {
+              focusedNamePersonId = person.id;
+              startNameFocusRing();
+              if (!selectNameInputPerson(person)) drawChart();
+            });
+            nameControl.addEventListener("blur", () => {
+              if (focusedNamePersonId === person.id) {
+                focusedNamePersonId = null;
+                stopNameFocusRing();
+                drawChart();
+              }
+            });
+            nameControl.addEventListener("click", event => {
+              event.preventDefault();
+              event.stopPropagation();
+              selectNameInputPerson(person);
+            });
+            nameControl.addEventListener("keydown", event => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              selectNameInputPerson(person);
+            });
+            summary.addEventListener("click", event => {
+              if (event.target !== summary || event.detail !== 0) event.preventDefault();
+            });
           } else {
+            caret.setAttribute("aria-hidden", "true");
             const nameInput = document.createElement("input");
             nameControl = nameInput;
             nameInput.className = "person-name";
