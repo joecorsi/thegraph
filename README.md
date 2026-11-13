@@ -4,7 +4,7 @@ A no-build HTML/CSS/JavaScript app for rating people on adjustable traits and co
 
 The hosted app is available at [joecorsi.github.io/thepear/](https://joecorsi.github.io/thepear/).
 
-A retro loading indicator appears while your account's graphs load and disappears when loading finishes or fails.
+A retro loading indicator fills in steps as your profile and graphs load, then disappears when loading finishes or fails.
 
 The graph has a black border while it or its axis controls have focus. People expanded by double-clicking them on the graph collapse when you click outside the graph. Focusing or clicking a person's name field selects their visible dot and highlights it with a brief expanding ring unless reduced motion is enabled. The selection remains after the field loses focus, until another person is selected, an axis selector is clicked, or you click outside the graph. A selected person's dot stays in front of other dots. New people have a repeating ring until their dot is moved on the graph by dragging or using the arrow keys; with reduced motion, the ring is stationary. This indicator persists across visits.
 

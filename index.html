@@ -78,10 +78,9 @@
       .loading-title { padding: 3px 5px; background: #000080; color: #fff; font-weight: bold; }
       .loading-body { padding: 14px 10px 12px; }
       .loading-body p { margin: 0 0 10px; }
-      .loading-progress { height: 16px; overflow: hidden; border: 2px inset #ddd; background: #fff; }
-      .loading-progress span { display: block; width: 35%; height: 100%; background: repeating-linear-gradient(to right, #000080 0 10px, #fff 10px 12px); animation: loading-progress 1.4s steps(16) infinite; }
-      @keyframes loading-progress { from { transform: translateX(-100%); } to { transform: translateX(286%); } }
-      @media (prefers-reduced-motion: reduce) { .loading-progress span { animation: none; transform: translateX(92%); } }
+      .loading-progress { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 2px; padding: 2px; border: 2px inset #ddd; background: #fff; }
+      .loading-progress span { aspect-ratio: 1; }
+      .loading-progress span.filled { background: #000080; }
       .graph-toggle, .axis-toggle, .relationship-toggle { position: relative; display: flex; width: 100%; padding-right: 24px; text-align: left; }
       .graph-toggle { padding-left: 2px; }
       .graph-toggle span, .axis-toggle span, .relationship-toggle span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -523,7 +522,10 @@
         <div class="loading-title">The Pear</div>
         <div class="loading-body">
           <p>Loading your graphs...</p>
-          <div class="loading-progress" aria-hidden="true"><span></span></div>
+          <div class="loading-progress" role="progressbar" aria-label="Loading your graphs" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
         </div>
       </div>
     </div>
@@ -580,6 +582,7 @@
       const el = {
         authScreen: document.getElementById("auth-screen"),
         loadingOverlay: document.getElementById("loading-overlay"),
+        loadingProgress: document.querySelector(".loading-progress"),
         backgroundToggle: document.getElementById("background-toggle"),
         backgroundSelect: document.getElementById("background-select"),
         backgroundError: document.getElementById("background-error"),
@@ -1104,6 +1107,15 @@
         el.statusSpinner.hidden = !inProgress;
       }
 
+      function updateLoadingProgress() {
+        const progress = Math.min(...[...activeGraphLoads].map(load => load.progress));
+        el.loadingProgress.setAttribute("aria-valuenow", progress);
+        const filled = Math.round(el.loadingProgress.children.length * progress / 100);
+        [...el.loadingProgress.children].forEach((segment, index) => {
+          segment.classList.toggle("filled", index < filled);
+        });
+      }
+
       function getRedirectUrl() {
         return `${window.location.origin}${window.location.pathname}`;
       }
@@ -1200,24 +1212,35 @@
         graphs = [];
         activeGraphId = null;
         state = null;
-        const load = {};
+        const load = { progress: 0 };
         activeGraphLoads.add(load);
+        updateLoadingProgress();
         el.loadingOverlay.hidden = false;
         try {
           await loadMe(load);
           if (!activeGraphLoads.has(load)) return;
+          load.progress = 25;
+          updateLoadingProgress();
           await loadGraphs(load);
           if (!activeGraphLoads.has(load)) return;
+          load.progress = 75;
+          updateLoadingProgress();
           el.workspace.hidden = false;
           drawChart();
           if (unsavedMe) showNotice(el.appNotice, "Your Me changes may not have been saved before the account changed.");
+          load.progress = 100;
+          updateLoadingProgress();
+          await new Promise(resolve => setTimeout(resolve, 200));
         } catch (error) {
           if (!activeGraphLoads.has(load)) return;
           el.authScreen.hidden = false;
           el.signInForm.hidden = true;
           showNotice(el.authNotice, `Signed in, but couldn't load your graphs or Me profile: ${error.message}`);
         } finally {
-          if (activeGraphLoads.delete(load) && activeGraphLoads.size === 0) el.loadingOverlay.hidden = true;
+          if (activeGraphLoads.delete(load)) {
+            if (activeGraphLoads.size === 0) el.loadingOverlay.hidden = true;
+            else updateLoadingProgress();
+          }
         }
       }
 
@@ -1249,6 +1272,8 @@
         if (!activeGraphLoads.has(load)) return;
         if (error) throw error;
         graphs = data;
+        load.progress = 50;
+        updateLoadingProgress();
         if (graphs.length === 0) {
           await createGraph("My first graph", false, false, load);
           return;
