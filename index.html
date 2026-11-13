@@ -1434,8 +1434,9 @@
           nameInput.addEventListener("focus", () => {
             focusedNamePersonId = person.id;
             startNameFocusRing();
-            drawChart();
+            if (!selectNameInputPerson(person)) drawChart();
           });
+          nameInput.addEventListener("click", () => selectNameInputPerson(person));
           nameInput.addEventListener("blur", () => {
             if (focusedNamePersonId === person.id) {
               focusedNamePersonId = null;
@@ -1845,6 +1846,14 @@
           ? `Selected ${person.name.trim() || "person"}. Use arrow keys to adjust traits.`
           : "Scatter plot of people by selected traits. Select a person, then use arrow keys to adjust.");
         drawChart();
+      }
+
+      function selectNameInputPerson(person) {
+        const bounds = el.chart.getBoundingClientRect();
+        if (!chartPoint(person, chartBounds(bounds.width, bounds.height), ageRange())) return false;
+        foregroundPersonId = person.id;
+        selectChartPerson(person);
+        return true;
       }
 
       function stopNameFocusRing() {
