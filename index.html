@@ -99,7 +99,6 @@
       #chart-labels { display: block; width: 100%; height: 100%; }
       .chart-label-hit { position: absolute; pointer-events: auto; touch-action: none; }
       .chart-hint { margin: 0 0 0 auto; text-align: right; font-size: .85em; }
-      .chart-hint.drag-hint { opacity: .5; }
       .axis-end { position: absolute; max-width: calc(50% - var(--plot-inset) - 12px); color: #000; }
       .axis-end:has(select:not([hidden])) { z-index: 3; }
       .axis-toggle { appearance: none; border: 0; padding: 3px 26px 3px 8px; background: transparent; color: inherit; cursor: pointer; font: 13.333px Arial, sans-serif; }
@@ -359,7 +358,7 @@
                       </span>
                       <button id="shuffle-axes" type="button" title="Randomly choose two different traits">Shuffle axes</button>
                     </span>
-                    <p class="chart-hint drag-hint">Drag a person to adjust</p>
+                    <p class="chart-hint">Drag a person to adjust</p>
                   </div>
                 </div>
               </div>
@@ -1503,7 +1502,6 @@
         el.shuffleAxes.disabled = state.traits.length < 2;
         const dragHint = state.xTrait !== AGE_AXIS || state.yTrait !== AGE_AXIS;
         el.chartHint.textContent = dragHint ? "Drag a person to adjust" : "Double-click a person to find them";
-        el.chartHint.classList.toggle("drag-hint", dragHint);
         for (const [controls, selected] of [[el.xAxes, state.xTrait], [el.yAxes, state.yTrait]]) {
           controls.forEach(select => {
             const age = new Option("Age", AGE_AXIS, false, selected === AGE_AXIS);
