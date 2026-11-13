@@ -14,7 +14,7 @@ The workspace stays within the viewport, with the add-person form above the scro
 
 When names are shown, hovered and selected graph names appear in a larger raised white box above the axis selectors. An open axis menu appears above the boxes. The hovered box appears above the selected box. Its text and border match the person's relationship color when relationship coloring is enabled; otherwise they are black. Dots and ordinary names underneath a box remain interactive.
 
-Use **Shuffle axes** beside Options to randomly choose two different traits, excluding the current pair. The new axes are saved with the graph. The button is disabled if fewer than two traits are available.
+Use **Shuffle axes** beside Options to randomly choose two different traits, excluding the current pair. The new axes are saved with the graph. The button is disabled if fewer than two traits are available. Hover over or focus the info icon at the bottom right for a graph controls tip.
 
 Use **Expand all** to open every currently listed person, including Me, or **Collapse all** to close any open people. The people list shows **Scroll for more** when there are entries or trait sliders below the visible area. When a trait slider is focused, use Up and Down to move between that person's sliders and Left and Right to adjust the score. The focused slider is blue.
 
