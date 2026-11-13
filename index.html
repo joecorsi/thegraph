@@ -69,6 +69,15 @@
       .status-spinner:not([hidden]) { display: inline-block; width: 1ch; margin-right: .5em; font-family: monospace; font-weight: bold; animation: status-spin .8s steps(8) infinite; }
       @keyframes status-spin { to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) { .status-spinner:not([hidden]) { animation: none; } }
+      .loading-overlay:not([hidden]) { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .15); pointer-events: none; }
+      .loading-window { box-sizing: border-box; width: min(280px, calc(100vw - 48px)); padding: 3px; border: 2px outset #ddd; background: #c0c0c0; color: #000; box-shadow: 2px 2px 0 #333; font: 13px Arial, sans-serif; }
+      .loading-title { padding: 3px 5px; background: #000080; color: #fff; font-weight: bold; }
+      .loading-body { padding: 14px 10px 12px; }
+      .loading-body p { margin: 0 0 10px; }
+      .loading-progress { height: 16px; overflow: hidden; border: 2px inset #ddd; background: #fff; }
+      .loading-progress span { display: block; width: 35%; height: 100%; background: repeating-linear-gradient(to right, #000080 0 10px, #fff 10px 12px); animation: loading-progress 1.4s steps(16) infinite; }
+      @keyframes loading-progress { from { transform: translateX(-100%); } to { transform: translateX(286%); } }
+      @media (prefers-reduced-motion: reduce) { .loading-progress span { animation: none; transform: translateX(92%); } }
       .graph-toggle, .axis-toggle, .relationship-toggle { position: relative; display: flex; width: 100%; padding-right: 24px; text-align: left; }
       .graph-toggle { padding-left: 2px; }
       .graph-toggle span, .axis-toggle span, .relationship-toggle span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -490,6 +499,16 @@
       </div>
     </main>
 
+    <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" hidden>
+      <div class="loading-window">
+        <div class="loading-title">The Pear</div>
+        <div class="loading-body">
+          <p>Loading your graphs...</p>
+          <div class="loading-progress" aria-hidden="true"><span></span></div>
+        </div>
+      </div>
+    </div>
+
     <aside class="background-selector" hidden>
       <button id="background-toggle" class="background-toggle" type="button" aria-label="Background: Plain" aria-haspopup="listbox" aria-expanded="false" aria-controls="background-select">Plain</button>
       <select id="background-select" aria-label="Background" size="9" hidden>
@@ -540,6 +559,7 @@
 
       const el = {
         authScreen: document.getElementById("auth-screen"),
+        loadingOverlay: document.getElementById("loading-overlay"),
         backgroundToggle: document.getElementById("background-toggle"),
         backgroundSelect: document.getElementById("background-select"),
         backgroundError: document.getElementById("background-error"),
@@ -643,6 +663,7 @@
 
       let client = null;
       let currentUser = null;
+      const activeGraphLoads = new Set();
       let graphs = [];
       let activeGraphId = null;
       let activeGraphName = "";
@@ -1115,8 +1136,10 @@
         focusedNamePersonId = null;
         stopNameFocusRing();
         if (el.deletePersonDialog.open) el.deletePersonDialog.close();
+        if (currentUser?.id !== nextUser?.id) activeGraphLoads.clear();
         currentUser = nextUser;
         if (!currentUser) {
+          el.loadingOverlay.hidden = true;
           if (el.traitsDialog.open) el.traitsDialog.close();
           if (el.newGraphDialog.open) el.newGraphDialog.close();
           if (el.renameGraphDialog.open) el.renameGraphDialog.close();
@@ -1140,27 +1163,35 @@
         graphs = [];
         activeGraphId = null;
         state = null;
+        const load = {};
+        activeGraphLoads.add(load);
+        el.loadingOverlay.hidden = false;
         try {
-          await loadGraphs();
+          await loadGraphs(load);
+          if (!activeGraphLoads.has(load)) return;
           el.workspace.hidden = false;
           drawChart();
         } catch (error) {
+          if (!activeGraphLoads.has(load)) return;
           el.authScreen.hidden = false;
           el.signInForm.hidden = true;
           showNotice(el.authNotice, `Signed in, but couldn't load your graphs: ${error.message}`);
+        } finally {
+          if (activeGraphLoads.delete(load) && activeGraphLoads.size === 0) el.loadingOverlay.hidden = true;
         }
       }
 
-      async function loadGraphs() {
+      async function loadGraphs(load) {
         setSaveStatus("Loading your graphs...", { inProgress: true });
         const { data, error } = await client
           .from("graphs")
           .select("id, user_id, name, data, created_at, updated_at")
           .order("updated_at", { ascending: false });
+        if (!activeGraphLoads.has(load)) return;
         if (error) throw error;
         graphs = data;
         if (graphs.length === 0) {
-          await createGraph("My first graph", false);
+          await createGraph("My first graph", false, false, load);
           return;
         }
         activateGraph(graphs[0]);
@@ -1205,7 +1236,7 @@
         graphDropdown.sync();
       }
 
-      async function createGraph(name, flush = true, copyPeople = false) {
+      async function createGraph(name, flush = true, copyPeople = false, load = null) {
         const sourceGraphId = activeGraphId;
         if (flush) await flushPendingSave();
         const data = initialState();
@@ -1225,6 +1256,7 @@
           .insert({ user_id: currentUser.id, name: cleanName, data })
           .select("id, user_id, name, data, created_at, updated_at")
           .single();
+        if (load && !activeGraphLoads.has(load)) return;
         if (error) throw error;
         graphs.unshift(graph);
         activateGraph(graph);
