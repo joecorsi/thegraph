@@ -1564,7 +1564,7 @@
       el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
 
       function updatePeopleExpandButton() {
-        const cards = [...el.meRow.children, ...el.peopleList.children].filter(card => !card.hidden);
+        const cards = [...el.peopleList.children].filter(card => !card.hidden);
         const collapse = cards.some(card => card.open);
         const action = collapse ? "Collapse" : "Expand";
         el.peopleExpandAll.firstElementChild.textContent = `${action} all`;
@@ -1573,9 +1573,11 @@
       }
 
       el.peopleExpandAll.addEventListener("click", () => {
-        const cards = [...el.meRow.children, ...el.peopleList.children].filter(card => !card.hidden);
+        const cards = [...el.peopleList.children].filter(card => !card.hidden);
         const expand = !cards.some(card => card.open);
-        graphOpenedPeople.clear();
+        for (const id of graphOpenedPeople) {
+          if (id !== ME_ID) graphOpenedPeople.delete(id);
+        }
         for (const card of cards) card.open = expand;
         updatePeopleExpandButton();
       });
