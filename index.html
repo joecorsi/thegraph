@@ -411,11 +411,10 @@
                   <button class="person-color" id="new-person-color" type="button" aria-label="Choose color for new person"></button>
                   <button class="button" type="submit" aria-label="Add person">Add</button>
                 </form>
-                <div id="me-row"></div>
                 <span id="trait-slider-instructions" class="visually-hidden">Use up and down arrows to move between trait sliders, and left and right arrows to adjust the score.</span>
                 <div class="people-list-wrap" id="people-list-wrap">
                   <div id="people-scroll" class="people-list" role="region" aria-label="People list" tabindex="0">
-                    <div id="me-details" hidden></div>
+                    <div id="me-row"></div>
                     <div id="people-list"></div>
                   </div>
                   <div class="people-scroll-hint" id="people-scroll-hint" hidden>Scroll for more</div>
@@ -668,7 +667,6 @@
         showNames: document.getElementById("show-names"),
         graphRelationships: document.querySelectorAll("[data-graph-relationship]"),
         meRow: document.getElementById("me-row"),
-        meDetails: document.getElementById("me-details"),
         peopleSearch: document.getElementById("people-search"),
         peopleSearchClear: document.getElementById("people-search-clear"),
         peopleList: document.getElementById("people-list"),
@@ -1568,7 +1566,7 @@
       el.peopleScroll.addEventListener("scroll", updatePeopleScrollHint);
 
       function updatePeopleExpandButton() {
-        const cards = [...el.peopleList.children].filter(card => !card.hidden);
+        const cards = [...el.meRow.children, ...el.peopleList.children].filter(card => !card.hidden);
         const collapse = cards.some(card => card.open);
         const action = collapse ? "Collapse" : "Expand";
         el.peopleExpandAll.firstElementChild.textContent = `${action} all`;
@@ -1577,11 +1575,9 @@
       }
 
       el.peopleExpandAll.addEventListener("click", () => {
-        const cards = [...el.peopleList.children].filter(card => !card.hidden);
+        const cards = [...el.meRow.children, ...el.peopleList.children].filter(card => !card.hidden);
         const expand = !cards.some(card => card.open);
-        for (const id of graphOpenedPeople) {
-          if (id !== ME_ID) graphOpenedPeople.delete(id);
-        }
+        graphOpenedPeople.clear();
         for (const card of cards) card.open = expand;
         updatePeopleExpandButton();
       });
@@ -1617,7 +1613,7 @@
       }
 
       function updatePersonModifiedBadge(person) {
-        const card = person.id === ME_ID ? el.meDetails : personCard(person.id);
+        const card = personCard(person.id);
         const badge = card?.querySelector(".person-modified-date");
         if (badge) setPersonDateBadge(badge, "Modified", person.modifiedAt);
       }
@@ -1638,12 +1634,10 @@
         const scrollTop = el.peopleScroll.scrollTop;
         peopleScrollObserver.disconnect();
         peopleScrollObserver.observe(el.peopleScroll);
-        peopleScrollObserver.observe(el.meDetails);
         personDropdowns.forEach(dropdown => dropdown.destroy());
         personDropdowns = [];
         el.peopleList.replaceChildren();
         el.meRow.replaceChildren();
-        el.meDetails.replaceChildren();
         for (const [personIndex, person] of [[-1, mePerson], ...sortedPeople()]) {
           const isMe = person === mePerson;
           const card = document.createElement("details");
@@ -1669,12 +1663,9 @@
               event.stopPropagation();
               card.open = !card.open;
               caret.setAttribute("aria-expanded", String(card.open));
-              if (card.open) el.peopleScroll.scrollTop = 0;
             });
             card.addEventListener("toggle", () => {
-              if (!card.isConnected) return;
               caret.setAttribute("aria-expanded", String(card.open));
-              el.meDetails.hidden = !card.open;
             });
             nameControl = document.createElement("span");
             nameControl.className = "person-name me-name graph-badge";
@@ -1706,7 +1697,6 @@
             });
             summary.addEventListener("click", event => {
               if (event.target !== summary || event.detail !== 0) event.preventDefault();
-              else if (!card.open) el.peopleScroll.scrollTop = 0;
             });
           } else {
             caret.setAttribute("aria-hidden", "true");
@@ -1932,15 +1922,16 @@
             traitList.append(row);
           }
           if (isMe) {
-            el.meDetails.append(dates, traitList);
-            el.meDetails.hidden = !card.open;
-            card.append(summary);
+            const details = document.createElement("div");
+            details.id = "me-details";
+            details.append(dates, traitList);
+            card.append(summary, details);
             el.meRow.append(card);
           } else {
             card.append(summary, dates, traitList);
             el.peopleList.append(card);
-            peopleScrollObserver.observe(card);
           }
+          peopleScrollObserver.observe(card);
         }
         el.peopleScroll.scrollTop = scrollTop;
         updatePeopleSearch();
@@ -2141,7 +2132,7 @@
       }
 
       function updatePersonSliders(person) {
-        const card = person.id === ME_ID ? el.meDetails : personCard(person.id);
+        const card = personCard(person.id);
         if (!card) return;
         for (const slider of card.querySelectorAll("input[type=range]")) {
           slider.value = String(person.values[slider.dataset.traitId]);
@@ -2356,8 +2347,7 @@
         }
         card.open = true;
         graphOpenedPeople.add(personId);
-        if (personId === ME_ID) el.peopleScroll.scrollTop = 0;
-        else el.peopleScroll.scrollTop += card.getBoundingClientRect().top - el.peopleScroll.getBoundingClientRect().top;
+        el.peopleScroll.scrollTop += card.getBoundingClientRect().top - el.peopleScroll.getBoundingClientRect().top;
       });
 
       function drawChart() {
@@ -3242,7 +3232,7 @@
         alignPeopleList();
       });
       for (const element of [el.chart.parentElement, document.querySelector(".chart-space"), document.querySelector(".chart-footer"), document.querySelector(".chart-heading"),
-                             document.querySelector(".people-heading"), el.meRow, el.addPersonForm]) {
+                             document.querySelector(".people-heading"), el.addPersonForm]) {
         layoutObserver.observe(element);
       }
 
