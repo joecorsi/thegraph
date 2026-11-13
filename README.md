@@ -20,6 +20,8 @@ Use **Expand all** to open every currently listed person, or **Collapse all** to
 
 Expanded people show their added and last-modified dates. Existing people have unknown dates until edited; copying people to another graph preserves their dates. Person edits, including graph movements and visibility changes, update the modified date.
 
+The **Me** row stays above search and shares your age, color, visibility, and trait scores across your graphs. Expand it to use the same sliders, or adjust its dot on the graph; its sliders scroll within the row when needed. Its added date uses your account creation date as an approximation of your first login, and its modified date reflects your latest Me edit. Me has no relationship or delete button, is unaffected by search and relationship filters, and is included in Expand all and the All count. Shared scores follow trait IDs: default traits and copied traits share scores, while independently created traits do not, even if their names match. Me is stored separately from graphs and is not copied with graph people.
+
 Use the **Traits** button to add, rename, remove, or swap the ends of traits for the current graph, then choose **Save** or **Cancel**. New traits appear at the top of the list, which scrolls when it exceeds the available dialog height. Swapping ends leaves scores unchanged. Existing traits keep their scores and names as the high end; their low end is shown as "Low" until you name it.
 
 New graphs include the default traits and start with Lame–Cool on the X axis and Benevolent–Malevolent on the Y axis. Changing the defaults does not alter existing saved graphs.
@@ -32,12 +34,12 @@ Use **Search people** above the add-person row to filter the list by name as you
 
 The background selector is currently hidden; the previously selected background remains saved on this device. The Magic Eye pattern hides a heart; relax your gaze to see it.
 
-Each graph is one row in `public.graphs`; its creation time is recorded in `created_at`, and its JSON data contains the people, trait ratings, and selected axes. Row-level security restricts every read and write to the authenticated owner.
+Each graph is one row in `public.graphs`; its creation time is recorded in `created_at`, and its JSON data contains the people, trait ratings, and selected axes. The shared Me profile is stored in `public.me_profiles`. Row-level security restricts every read and write to the authenticated owner.
 
 ## Supabase setup
 
 1. Create a Supabase project.
-2. In the Supabase SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql).
+2. In the Supabase SQL Editor, run [`supabase/schema.sql`](./supabase/schema.sql). Existing installations should rerun it to create the Me profile table and its policies.
 3. In **Authentication → Providers**, enable Google and email. Configure Google OAuth credentials in Supabase; the provider secret stays in Supabase and is never entered into this app.
 4. In **Authentication → URL Configuration**, set the site URL to `https://joecorsi.github.io/thepear/` and allow that URL as a redirect. For local development, also allow `http://localhost:8000/` and `http://127.0.0.1:8000/`.
 5. In this directory, start a static server:

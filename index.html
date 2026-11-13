@@ -113,7 +113,7 @@
       .axis-y-low, .axis-y-high { left: calc(50% + 2px); }
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
-      .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
+      .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
       .chart-heading, .people-heading { gap: var(--control-gap); padding: var(--control-gap) 0 calc(var(--control-gap) + 5px); }
       .people-controls { display: flex; flex: 1 1 max-content; align-items: center; min-width: 0; gap: var(--control-gap); }
       #open-traits, #people-expand-all, .people-filter { flex: 1 1 auto; }
@@ -173,6 +173,8 @@
       .person-age::-webkit-inner-spin-button, .person-age::-webkit-outer-spin-button { appearance: none; margin: 0; }
       .person-summary button { justify-self: start; }
       .person-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--control-gap); }
+      #me-row .person-actions { grid-template-columns: 1fr; }
+      #me-row .me-details { max-height: min(30vh, 300px); overflow-y: auto; overscroll-behavior: contain; }
       .person-actions button { box-sizing: border-box; width: 100%; min-width: 0; }
       .person-actions button, .graph-action { display: grid; place-items: center; padding: 1px 3px; }
       /* Preserve the height of the text buttons while centering the icons. */
@@ -374,6 +376,7 @@
                     </span>
                   </div>
                 </header>
+                <div id="me-row"></div>
                 <div class="people-search">
                   <svg class="people-search-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m10.5 10.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
                   <input id="people-search" type="search" placeholder="Search people" aria-label="Search people" aria-controls="people-list">
@@ -530,6 +533,7 @@
       const CONFIG_KEY = "people-map-supabase-config";
       const BACKGROUND_KEY = "the-pear-background";
       const AGE_AXIS = "__person_age__";
+      const ME_ID = "__me__";
       const RING_EXPANSION_DURATION = 650;
       const PLACEMENT_RING_INTERVAL = 1450;
       const RELATIONSHIP_COLORS = { friend: "#009b4f", enemy: "#382110", lover: "#f25416", family: "#7441a6" };
@@ -638,6 +642,7 @@
         relationshipColors: document.getElementById("relationship-colors"),
         showNames: document.getElementById("show-names"),
         graphRelationships: document.querySelectorAll("[data-graph-relationship]"),
+        meRow: document.getElementById("me-row"),
         peopleSearch: document.getElementById("people-search"),
         peopleSearchClear: document.getElementById("people-search-clear"),
         peopleList: document.getElementById("people-list"),
@@ -663,6 +668,7 @@
 
       let client = null;
       let currentUser = null;
+      let mePerson = null;
       const activeGraphLoads = new Set();
       let graphs = [];
       let activeGraphId = null;
@@ -670,6 +676,10 @@
       let state = null;
       let saveTimer = null;
       let pendingSave = null;
+      let meSaveTimer = null;
+      let pendingMeSave = null;
+      let meSaveVersion = 0;
+      let meSavedVersion = 0;
       let saveQueue = Promise.resolve();
       let saveVersion = 0;
       let authNoticeTimer = null;
@@ -1130,13 +1140,21 @@
       async function applySession(session) {
         const nextUser = session?.user ?? null;
         if (currentUser?.id === nextUser?.id && nextUser && !el.workspace.hidden) return;
+        const unsavedMe = Boolean(currentUser && currentUser.id !== nextUser?.id && meSaveVersion !== meSavedVersion);
         closePeopleFilter();
         closeGraphOptions();
         graphOpenedPeople.clear();
         focusedNamePersonId = null;
         stopNameFocusRing();
         if (el.deletePersonDialog.open) el.deletePersonDialog.close();
-        if (currentUser?.id !== nextUser?.id) activeGraphLoads.clear();
+        if (currentUser?.id !== nextUser?.id) {
+          activeGraphLoads.clear();
+          clearTimeout(meSaveTimer);
+          meSaveTimer = null;
+          pendingMeSave = null;
+          meSavedVersion = ++meSaveVersion;
+          mePerson = null;
+        }
         currentUser = nextUser;
         if (!currentUser) {
           el.loadingOverlay.hidden = true;
@@ -1154,6 +1172,7 @@
           state = null;
           if (placementRingFrame !== null) cancelAnimationFrame(placementRingFrame);
           placementRingFrame = null;
+          if (unsavedMe) showNotice(el.authNotice, "Your Me changes may not have been saved before the account changed.");
           return;
         }
         el.authScreen.hidden = true;
@@ -1167,18 +1186,40 @@
         activeGraphLoads.add(load);
         el.loadingOverlay.hidden = false;
         try {
+          await loadMe(load);
+          if (!activeGraphLoads.has(load)) return;
           await loadGraphs(load);
           if (!activeGraphLoads.has(load)) return;
           el.workspace.hidden = false;
           drawChart();
+          if (unsavedMe) showNotice(el.appNotice, "Your Me changes may not have been saved before the account changed.");
         } catch (error) {
           if (!activeGraphLoads.has(load)) return;
           el.authScreen.hidden = false;
           el.signInForm.hidden = true;
-          showNotice(el.authNotice, `Signed in, but couldn't load your graphs: ${error.message}`);
+          showNotice(el.authNotice, `Signed in, but couldn't load your graphs or Me profile: ${error.message}`);
         } finally {
           if (activeGraphLoads.delete(load) && activeGraphLoads.size === 0) el.loadingOverlay.hidden = true;
         }
+      }
+
+      async function loadMe(load) {
+        const user = currentUser;
+        const { data, error } = await client.from("me_profiles").select("data")
+          .eq("user_id", user.id).maybeSingle();
+        if (!activeGraphLoads.has(load)) return;
+        if (error) throw error;
+        if (mePerson) return;
+        const profile = data?.data ?? { id: ME_ID, name: "Me", color: COLORS[0], values: {} };
+        if (!isValidState({ ...initialState(), people: [profile] }) ||
+            profile.id !== ME_ID || profile.name !== "Me" ||
+            Array.isArray(profile.values) ||
+            Object.values(profile.values).some(value => typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 100)) {
+          throw new Error("Your Me profile is not in the expected format.");
+        }
+        mePerson = { ...profile, color: profile.color ?? COLORS[0], values: { ...profile.values } };
+        if (user.created_at && Number.isFinite(Date.parse(user.created_at))) mePerson.addedAt = user.created_at;
+        else delete mePerson.addedAt;
       }
 
       async function loadGraphs(load) {
@@ -1282,9 +1323,48 @@
       }
 
       function enqueueSave(snapshot) {
-        const task = saveQueue.catch(() => {}).then(() => persistSnapshot(snapshot));
+        const task = saveQueue.catch(() => {}).then(() => snapshot.me ? persistMeSnapshot(snapshot) : persistSnapshot(snapshot));
         saveQueue = task;
         return task;
+      }
+
+      async function persistMeSnapshot(snapshot) {
+        try {
+          const { error } = await client.from("me_profiles").upsert(
+            { user_id: snapshot.userId, data: snapshot.data }, { onConflict: "user_id" }
+          );
+          if (error) throw error;
+        } catch (error) {
+          if (currentUser?.id === snapshot.userId && snapshot.version === meSaveVersion) pendingMeSave = snapshot;
+          throw error;
+        }
+        if (currentUser?.id === snapshot.userId && snapshot.version === meSaveVersion) {
+          meSavedVersion = snapshot.version;
+          setSaveStatus("Saved to your account");
+        }
+      }
+
+      function schedulePersonSave(person) {
+        if (person !== mePerson) {
+          scheduleSave();
+          return;
+        }
+        if (!currentUser) return;
+        meSaveVersion += 1;
+        pendingMeSave = { me: true, userId: currentUser.id, data: JSON.parse(JSON.stringify(person)), version: meSaveVersion };
+        setSaveStatus("Saving...", { inProgress: true });
+        clearTimeout(meSaveTimer);
+        meSaveTimer = setTimeout(() => {
+          const snapshot = pendingMeSave;
+          pendingMeSave = null;
+          meSaveTimer = null;
+          void enqueueSave(snapshot).catch(error => {
+            if (currentUser?.id === snapshot.userId && snapshot.version === meSaveVersion) {
+              setSaveStatus(`Save failed: ${error.message}`, { isError: true });
+              showNotice(el.appNotice, `Couldn't save your Me profile: ${error.message}`);
+            }
+          });
+        }, 500);
       }
 
       function scheduleSave() {
@@ -1318,6 +1398,13 @@
           saveTimer = null;
           const snapshot = pendingSave;
           pendingSave = null;
+          if (snapshot) await enqueueSave(snapshot);
+        }
+        if (pendingMeSave) {
+          clearTimeout(meSaveTimer);
+          meSaveTimer = null;
+          const snapshot = pendingMeSave;
+          pendingMeSave = null;
           if (snapshot) await enqueueSave(snapshot);
         }
         await saveQueue;
@@ -1420,7 +1507,7 @@
       el.peopleList.addEventListener("scroll", updatePeopleScrollHint);
 
       function updatePeopleExpandButton() {
-        const cards = [...el.peopleList.children].filter(card => !card.hidden);
+        const cards = [...el.meRow.children, ...el.peopleList.children].filter(card => !card.hidden);
         const collapse = cards.some(card => card.open);
         const action = collapse ? "Collapse" : "Expand";
         el.peopleExpandAll.firstElementChild.textContent = `${action} all`;
@@ -1429,7 +1516,7 @@
       }
 
       el.peopleExpandAll.addEventListener("click", () => {
-        const cards = [...el.peopleList.children].filter(card => !card.hidden);
+        const cards = [...el.meRow.children, ...el.peopleList.children].filter(card => !card.hidden);
         const expand = !cards.some(card => card.open);
         graphOpenedPeople.clear();
         for (const card of cards) card.open = expand;
@@ -1467,7 +1554,7 @@
       }
 
       function updatePersonModifiedBadge(person) {
-        const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
+        const card = personCard(person.id);
         const badge = card?.querySelector(".person-modified-date");
         if (badge) setPersonDateBadge(badge, "Modified", person.modifiedAt);
       }
@@ -1484,13 +1571,17 @@
       function renderPeople() {
         updatePeopleFilter();
         const openPeople = new Set([...el.peopleList.querySelectorAll("details[open]")].map(item => item.dataset.personId));
+        if (el.meRow.querySelector("details[open]")) openPeople.add(ME_ID);
         const scrollTop = el.peopleList.scrollTop;
+        const meScrollTop = el.meRow.querySelector(".me-details")?.scrollTop ?? 0;
         peopleScrollObserver.disconnect();
         peopleScrollObserver.observe(el.peopleList);
         personDropdowns.forEach(dropdown => dropdown.destroy());
         personDropdowns = [];
         el.peopleList.replaceChildren();
-        for (const [personIndex, person] of sortedPeople()) {
+        el.meRow.replaceChildren();
+        for (const [personIndex, person] of [[-1, mePerson], ...sortedPeople()]) {
+          const isMe = person === mePerson;
           const card = document.createElement("details");
           card.className = "person-card";
           card.dataset.personId = person.id;
@@ -1508,15 +1599,19 @@
           nameInput.className = "person-name";
           nameInput.type = "text";
           nameInput.maxLength = 40;
-          nameInput.placeholder = `Person ${personIndex + 1}`;
+          nameInput.placeholder = isMe ? "Me" : `Person ${personIndex + 1}`;
           nameInput.value = person.name;
-          nameInput.setAttribute("aria-label", `Name for person ${personIndex + 1}`);
+          nameInput.readOnly = isMe;
+          nameInput.setAttribute("aria-label", isMe ? "Me" : `Name for person ${personIndex + 1}`);
           nameInput.addEventListener("focus", () => {
             focusedNamePersonId = person.id;
             startNameFocusRing();
             if (!selectNameInputPerson(person)) drawChart();
           });
-          nameInput.addEventListener("click", () => selectNameInputPerson(person));
+          nameInput.addEventListener("click", () => {
+            selectNameInputPerson(person);
+            if (isMe) card.open = !card.open;
+          });
           nameInput.addEventListener("blur", () => {
             if (focusedNamePersonId === person.id) {
               focusedNamePersonId = null;
@@ -1540,7 +1635,7 @@
             }
             if (selectedPersonId === person.id) selectChartPerson(person);
             else drawChart();
-            scheduleSave();
+            schedulePersonSave(person);
           });
           nameInput.addEventListener("change", () => {
             setTimeout(() => {
@@ -1555,6 +1650,7 @@
           relationship.setAttribute("aria-label", `Relationship for ${person.name || "person"}`);
           const relationshipWrapper = document.createElement("span");
           relationshipWrapper.className = "person-relationship";
+          relationshipWrapper.hidden = isMe;
           const relationshipToggle = document.createElement("button");
           relationshipToggle.className = "relationship-toggle";
           relationshipToggle.type = "button";
@@ -1590,7 +1686,7 @@
           ageInput.step = "1";
           ageInput.placeholder = "Age";
           ageInput.value = person.age === undefined ? "" : String(person.age);
-          ageInput.setAttribute("aria-label", `Age for person ${personIndex + 1}`);
+          ageInput.setAttribute("aria-label", isMe ? "Age for Me" : `Age for person ${personIndex + 1}`);
           ageInput.addEventListener("input", () => {
             if (!validateAgeInput(ageInput)) {
               ageInput.reportValidity();
@@ -1605,7 +1701,7 @@
               if (select.value === AGE_AXIS) axisDropdowns.get(select).sync();
             }
             drawChart();
-            scheduleSave();
+            schedulePersonSave(person);
           });
           ageInput.addEventListener("change", () => {
             if (el.peopleSortSelect.value === "age") setTimeout(sortPeopleCards, 0);
@@ -1633,7 +1729,7 @@
             if (person.hidden && hoveredPersonId === person.id) hoveredPersonId = null;
             if (person.hidden && selectedPersonId === person.id) selectChartPerson(null);
             else drawChart();
-            scheduleSave();
+            schedulePersonSave(person);
             if (el.peopleSortSelect.value === "visibility") sortPeopleCards();
           });
           const remove = document.createElement("button");
@@ -1669,7 +1765,8 @@
             control.addEventListener("keydown", event => event.stopPropagation());
           }
           summaryName.append(caret, nameInput, relationshipWrapper, ageInput, color);
-          actions.append(visibility, remove);
+          actions.append(visibility);
+          if (!isMe) actions.append(remove);
           summary.append(summaryName, actions);
 
           const dates = document.createElement("div");
@@ -1717,14 +1814,23 @@
               person.values[trait.id] = value;
               markPersonModified(person);
               drawChart();
-              scheduleSave();
+              schedulePersonSave(person);
             });
             row.append(lowLabel, slider, highLabel);
             traitList.append(row);
           }
-          card.append(summary, dates, traitList);
-          el.peopleList.append(card);
-          peopleScrollObserver.observe(card);
+          if (isMe) {
+            const details = document.createElement("div");
+            details.className = "me-details";
+            details.append(dates, traitList);
+            card.append(summary, details);
+            el.meRow.append(card);
+            details.scrollTop = meScrollTop;
+          } else {
+            card.append(summary, dates, traitList);
+            el.peopleList.append(card);
+            peopleScrollObserver.observe(card);
+          }
         }
         el.peopleList.scrollTop = scrollTop;
         updatePeopleSearch();
@@ -1747,7 +1853,7 @@
       }
 
       function matchesPeopleFilter(person) {
-        return !peopleFilter || person.relationship === peopleFilter;
+        return person === mePerson || !peopleFilter || person.relationship === peopleFilter;
       }
 
       function isPersonVisibleOnGraph(person) {
@@ -1755,13 +1861,13 @@
       }
 
       function updatePeopleFilter() {
-        el.peopleCountLabel.parentElement.dataset.size = `${"8".repeat(String(state.people.length).length)} people`;
+        el.peopleCountLabel.parentElement.dataset.size = `${"8".repeat(String(state.people.length + 1).length)} people`;
         el.peopleCount.classList.toggle("filtered", Boolean(peopleFilter));
         for (const option of el.peopleFilterMenu.children) {
           const filter = option.dataset.filter;
           const count = filter
             ? state.people.filter(person => person.relationship === filter).length
-            : state.people.length;
+            : state.people.length + (mePerson ? 1 : 0);
           option.lastElementChild.textContent = count;
           option.setAttribute("aria-checked", String(filter === peopleFilter));
           if (filter === peopleFilter) el.peopleCount.setAttribute("aria-label", `Filter people: ${option.firstElementChild.textContent} (${count})`);
@@ -1840,10 +1946,19 @@
         return { left: inset, top: inset, right: width - inset, bottom: height - inset };
       }
 
+      function chartPeople() {
+        return mePerson ? [...state.people, mePerson] : state.people;
+      }
+
+      function personCard(personId) {
+        if (personId === ME_ID) return el.meRow.querySelector(".person-card");
+        return [...el.peopleList.children].find(item => item.dataset.personId === personId);
+      }
+
       function ageRange() {
         let min = Infinity;
         let max = -Infinity;
-        for (const person of state.people) {
+        for (const person of chartPeople()) {
           if (person.age === undefined) continue;
           min = Math.min(min, person.age);
           max = Math.max(max, person.age);
@@ -1872,15 +1987,16 @@
         if (!state || !state.xTrait || !state.yTrait) return null;
         const bounds = chartBounds(point.width, point.height);
         const range = ageRange();
-        const selected = state.people.find(person => person.id === selectedPersonId);
+        const people = chartPeople();
+        const selected = people.find(person => person.id === selectedPersonId);
         const selectedPosition = selected && chartPoint(selected, bounds, range);
         if (selectedPosition && Math.hypot(point.x - selectedPosition.x, point.y - selectedPosition.y) <= 12) return selected;
-        const focused = state.people.find(person => person.id === focusedNamePersonId);
+        const focused = people.find(person => person.id === focusedNamePersonId);
         const focusedPosition = focused && chartPoint(focused, bounds, range);
         if (focusedPosition && Math.hypot(point.x - focusedPosition.x, point.y - focusedPosition.y) <= 12) return focused;
-        for (let i = state.people.length - 1; i >= 0; i--) {
-          const position = chartPoint(state.people[i], bounds, range);
-          if (position && Math.hypot(point.x - position.x, point.y - position.y) <= 12) return state.people[i];
+        for (let i = people.length - 1; i >= 0; i--) {
+          const position = chartPoint(people[i], bounds, range);
+          if (position && Math.hypot(point.x - position.x, point.y - position.y) <= 12) return people[i];
         }
         return null;
       }
@@ -1915,7 +2031,7 @@
       }
 
       function updatePersonSliders(person) {
-        const card = [...el.peopleList.children].find(item => item.dataset.personId === person.id);
+        const card = personCard(person.id);
         if (!card) return;
         for (const slider of card.querySelectorAll("input[type=range]")) {
           slider.value = String(person.values[slider.dataset.traitId]);
@@ -1978,6 +2094,10 @@
           for (const card of el.peopleList.children) {
             if (personIds.has(card.dataset.personId)) card.open = false;
           }
+          if (personIds.has(ME_ID)) {
+            const card = personCard(ME_ID);
+            if (card) card.open = false;
+          }
         }, 0);
       }, true);
 
@@ -1985,7 +2105,7 @@
         if (!event.isPrimary || event.button !== 0 || chartDrag) return;
         const point = pointerPosition(event);
         const { person, personId } = chartHitAtPoint(point);
-        const selected = state?.people.find(item => item.id === personId) ?? null;
+        const selected = state ? chartPeople().find(item => item.id === personId) ?? null : null;
         if (selected) foregroundPersonId = selected.id;
         selectChartPerson(selected);
         el.chart.focus({ preventScroll: true });
@@ -2020,7 +2140,7 @@
         if (event.pointerId !== chartDrag.pointerId) return;
         if (!state || activeGraphId !== chartDrag.graphId ||
             state.xTrait !== chartDrag.xTrait || state.yTrait !== chartDrag.yTrait) return;
-        const person = state.people.find(item => item.id === chartDrag.personId);
+        const person = chartPeople().find(item => item.id === chartDrag.personId);
         if (!person) return;
         const bounds = chartBounds(point.width, point.height);
         const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
@@ -2040,7 +2160,7 @@
         }
         updatePersonSliders(person);
         drawChart();
-        scheduleSave();
+        schedulePersonSave(person);
       });
 
       function endChartDrag(event) {
@@ -2076,7 +2196,7 @@
           ArrowDown: ["y", -1], ArrowUp: ["y", 1]
         }[event.key];
         if (!direction || !state || !selectedPersonId || chartDrag) return;
-        const person = state.people.find(item => item.id === selectedPersonId);
+        const person = chartPeople().find(item => item.id === selectedPersonId);
         if (!person) return;
         const rect = el.chart.getBoundingClientRect();
         if (!chartPoint(person, chartBounds(rect.width, rect.height), ageRange())) return;
@@ -2092,13 +2212,13 @@
         hoveredPersonId = null;
         updatePersonSliders(person);
         drawChart();
-        scheduleSave();
+        schedulePersonSave(person);
       });
       el.chart.addEventListener("dblclick", event => {
         const point = pointerPosition(event);
         const { personId } = chartHitAtPoint(point);
         if (!personId) return;
-        const card = [...el.peopleList.children].find(item => item.dataset.personId === personId);
+        const card = personCard(personId);
         if (!card) return;
         if (card.hidden) {
           el.peopleSearch.value = "";
@@ -2106,7 +2226,9 @@
         }
         card.open = true;
         graphOpenedPeople.add(personId);
-        el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
+        if (personId !== ME_ID) {
+          el.peopleList.scrollTop += card.getBoundingClientRect().top - el.peopleList.getBoundingClientRect().top;
+        }
       });
 
       function drawChart() {
@@ -2152,7 +2274,7 @@
         context.font = "bold 12px serif";
         context.textAlign = "left";
         const range = ageRange();
-        const plotted = state.people.map((person, index) => ({
+        const plotted = chartPeople().map((person, index) => ({
           person, index, point: chartPoint(person, { left, top, right, bottom }, range)
         })).filter(item => item.point);
         const count = plotted.length;
@@ -2622,7 +2744,7 @@
         try {
           colorPerson.color = color.toLowerCase();
           markPersonModified(colorPerson);
-          scheduleSave();
+          schedulePersonSave(colorPerson);
           await flushPendingSave();
           colorButton.style.backgroundColor = colorPerson.color;
           drawChart();
@@ -2632,7 +2754,7 @@
           if (previousModifiedAt === undefined) delete colorPerson.modifiedAt;
           else colorPerson.modifiedAt = previousModifiedAt;
           updatePersonModifiedBadge(colorPerson);
-          scheduleSave();
+          schedulePersonSave(colorPerson);
           setSaveStatus(`Save failed: ${error.message}`, { isError: true });
           showNotice(el.colorNotice, `Couldn't save this color: ${error.message}`);
         } finally {
@@ -2843,10 +2965,10 @@
         peopleFilter = option.dataset.filter;
         closePeopleFilter(true);
         hoveredPersonId = null;
-        if (selectedPersonId && !state.people.some(person => person.id === selectedPersonId && matchesPeopleFilter(person))) {
+        if (selectedPersonId && !chartPeople().some(person => person.id === selectedPersonId && matchesPeopleFilter(person))) {
           selectChartPerson(null);
         }
-        if (foregroundPersonId && !state.people.some(person => person.id === foregroundPersonId && matchesPeopleFilter(person))) {
+        if (foregroundPersonId && !chartPeople().some(person => person.id === foregroundPersonId && matchesPeopleFilter(person))) {
           foregroundPersonId = null;
         }
         renderPeople();
@@ -2965,7 +3087,7 @@
         alignPeopleList();
       });
       for (const element of [el.chart.parentElement, document.querySelector(".chart-space"), document.querySelector(".chart-footer"), document.querySelector(".chart-heading"),
-                             document.querySelector(".people-heading"), el.addPersonForm]) {
+                             document.querySelector(".people-heading"), el.meRow, el.addPersonForm]) {
         layoutObserver.observe(element);
       }
 
