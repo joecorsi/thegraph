@@ -83,6 +83,7 @@
       #chart { display: block; width: 100%; aspect-ratio: 1; border-radius: inherit; touch-action: none; }
       #chart:focus { outline: none; }
       .chart-hint { position: absolute; left: 8px; top: 6px; max-width: calc(50% - 16px); margin: 0; color: #000; font-size: .85em; pointer-events: none; }
+      .chart-hint.drag-hint { opacity: .5; }
       .axis-end { position: absolute; max-width: calc(50% - var(--plot-inset) - 12px); color: #000; }
       .axis-end:focus-within { z-index: 3; }
       .axis-toggle { appearance: none; border: 0; padding: 3px 26px 3px 8px; background: transparent; color: inherit; cursor: pointer; font: 13.333px Arial, sans-serif; }
@@ -310,7 +311,7 @@
                     <span class="axis-end axis-x-high"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="x-axis-high"><span></span></button><select id="x-axis-high" aria-label="Horizontal axis trait, right end" size="9" hidden></select></span>
                     <span class="axis-end axis-y-low"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="y-axis-low"><span></span></button><select id="y-axis-low" aria-label="Vertical axis trait, bottom end" size="9" hidden></select></span>
                     <span class="axis-end axis-y-high"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="y-axis-high"><span></span></button><select id="y-axis-high" aria-label="Vertical axis trait, top end" size="9" hidden></select></span>
-                    <p class="chart-hint">Drag a person to adjust</p>
+                    <p class="chart-hint drag-hint">Drag a person to adjust</p>
                   </div>
                   <div class="chart-footer">
                     <span class="graph-footer-controls">
@@ -1360,8 +1361,9 @@
         state.xTrait = state.xTrait === AGE_AXIS || state.traits.some(trait => trait.id === state.xTrait) ? state.xTrait : state.traits[0]?.id;
         state.yTrait = state.yTrait === AGE_AXIS || state.traits.some(trait => trait.id === state.yTrait) ? state.yTrait : state.traits[1]?.id ?? state.traits[0]?.id;
         el.shuffleAxes.disabled = state.traits.length < 2;
-        el.chartHint.textContent = state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS
-          ? "Double-click a person to find them" : "Drag a person to adjust";
+        const dragHint = state.xTrait !== AGE_AXIS || state.yTrait !== AGE_AXIS;
+        el.chartHint.textContent = dragHint ? "Drag a person to adjust" : "Double-click a person to find them";
+        el.chartHint.classList.toggle("drag-hint", dragHint);
         for (const [controls, selected] of [[el.xAxes, state.xTrait], [el.yAxes, state.yTrait]]) {
           controls.forEach(select => {
             const age = new Option("Age", AGE_AXIS, false, selected === AGE_AXIS);
