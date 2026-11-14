@@ -57,7 +57,7 @@
       .masthead .account-bar { justify-self: end; }
       .privacy-note { display: none; margin: 0; text-align: center; font-size: .85em; }
       .page:has(#workspace:not([hidden])) .privacy-note { display: block; }
-      .auth-panel:not([hidden]) { display: grid; width: fit-content; max-width: 100%; grid-template-columns: min(300px, 100%) minmax(0, 600px); grid-template-rows: auto auto; align-items: start; column-gap: 2rem; }
+      .auth-panel:not([hidden]) { display: grid; width: fit-content; max-width: 100%; grid-template-columns: min(300px, 100%) minmax(0, 500px); grid-template-rows: auto auto; align-items: start; column-gap: 2rem; }
       .auth-copy { display: grid; grid-column: 1; grid-row: 1 / span 2; grid-template-rows: subgrid; width: 100%; max-width: 300px; align-self: stretch; }
       #auth-title { margin-bottom: 0; font-size: min(1.9em, calc((100vw - 50px) / 10)); white-space: nowrap; }
       .auth-details { min-width: 0; }
@@ -71,7 +71,7 @@
       }
       #sign-in-form .auth-actions { display: grid; }
       .setup-details { margin: 1em 0; }
-      .demo-graph { --demo-axis-x: 50%; --demo-axis-y: 50%; position: relative; box-sizing: border-box; width: min(600px, 100%); aspect-ratio: 1; overflow: hidden; border: 1px solid rgba(0, 0, 0, .15); border-radius: 8px; background: #fff; color: #000; touch-action: none; }
+      .demo-graph { --demo-axis-x: 50%; --demo-axis-y: 50%; position: relative; box-sizing: border-box; width: min(500px, 100%); aspect-ratio: 1; overflow: hidden; border: 1px solid rgba(0, 0, 0, .15); border-radius: 8px; background: #fff; color: #000; touch-action: none; }
       .demo-graph:focus-within { border-color: #000; }
       .demo-axis-line { position: absolute; pointer-events: none; }
       .demo-axis-horizontal { left: 20px; right: 20px; top: var(--demo-axis-y); border-top: 1px solid #000; }
@@ -86,8 +86,13 @@
       .demo-person { position: absolute; z-index: 2; display: flex; align-items: center; gap: 3px; padding: 0; border: 0; background: transparent; color: #000; font: bold 12px serif; white-space: nowrap; transform: translate(-6px, -50%); cursor: move; touch-action: none; }
       .demo-person[hidden] { display: none; }
       .demo-person.label-left { flex-direction: row-reverse; transform: translate(calc(-100% + 6px), -50%); }
-      .demo-person:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
-      .demo-person-dot { box-sizing: border-box; flex: none; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: var(--person-color); }
+      .demo-person:focus-visible { outline: none; }
+      .demo-graph.has-selection .demo-person:not(.selected) { opacity: .4; }
+      .demo-person.selected { z-index: 3; }
+      .demo-person-dot { position: relative; box-sizing: border-box; flex: none; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: var(--person-color); }
+      .demo-person.selected .demo-person-dot::after { content: ""; position: absolute; inset: -5px; border: 1.5px dotted #333; border-radius: 50%; pointer-events: none; }
+      .demo-person.selected .demo-person-name { position: absolute; top: -4px; left: 6px; padding: 2px 6px; border: 1px solid currentColor; border-radius: 3px; background: #fff; font: bold 16px serif; line-height: 18px; transform: translate(-50%, -100%); }
+      .demo-person.selected.label-left .demo-person-name { right: 6px; left: auto; transform: translate(50%, -100%); }
       .layout { --layout-gap: calc(1em + 5px); display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, min(calc(100% - min(40%, 21rem) - var(--layout-gap)), var(--chart-available-width, 100%))) min(40%, 21rem); grid-template-rows: minmax(0, 1fr); justify-content: center; gap: var(--layout-gap); }
       .graph-select { position: relative; flex: 1 1 90px; min-width: 90px; }
       .graph-dates { display: flex; flex-wrap: wrap; gap: var(--control-gap); }
@@ -2685,27 +2690,35 @@
         const traits = DEFAULT_TRAITS;
         let xTrait = "lame-cool";
         let yTrait = "benevolent-malevolent";
-        const people = [
-          { id: ME_ID, name: "Me", color: "#744aa0", x: 50, y: 50 },
-          { name: "Alex", color: "#145c92", relationship: "friend", x: 18, y: 76 },
-          { name: "Blair", color: "#c52d83", relationship: "family", x: 42, y: 85 },
-          { name: "Casey", color: "#468949", relationship: "friend", x: 73, y: 78 },
-          { name: "Drew", color: "#dc7720", relationship: "lover", x: 85, y: 55 },
-          { name: "Emery", color: "#009a9a", relationship: "friend", x: 57, y: 62 },
-          { name: "Frankie", color: "#744aa0", relationship: "family", x: 25, y: 53 },
-          { name: "Harper", color: "#b45361", relationship: "enemy", x: 12, y: 29 },
-          { name: "Jules", color: "#528347", relationship: "friend", x: 38, y: 20 },
-          { name: "Morgan", color: "#567ab3", x: 64, y: 31 },
-          { name: "Riley", color: "#987629", relationship: "enemy", x: 86, y: 14 }
-        ].map(({ x, y, ...person }, personIndex) => ({
-          ...person,
-          values: Object.fromEntries(traits.map((trait, traitIndex) => [
-            trait.id, trait.id === xTrait ? x : trait.id === yTrait ? y :
-              10 + (personIndex * 37 + traitIndex * 29) % 81
-          ]))
-        }));
+        const randomBetween = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+        const relationships = Object.keys(RELATIONSHIP_COLORS);
+        for (let i = relationships.length - 1; i > 0; i--) {
+          const j = randomBetween(0, i);
+          [relationships[i], relationships[j]] = [relationships[j], relationships[i]];
+        }
+        const cluster = { x: randomBetween(35, 65), y: randomBetween(35, 65) };
+        const clusterOffsets = [[-7, 0], [6, 8], [6, -8]];
+        const names = ["Me", "Alex", "Blair", "Casey", "Drew", "Emery", "Frankie", "Harper", "Jules", "Morgan", "Riley"];
+        const people = names.map((name, index) => {
+          const values = Object.fromEntries(traits.map(trait => [trait.id, randomBetween(0, 100)]));
+          values[xTrait] = randomBetween(12, 88);
+          values[yTrait] = randomBetween(12, 88);
+          if (index >= 1 && index <= clusterOffsets.length) {
+            const [dx, dy] = clusterOffsets[index - 1];
+            values[xTrait] = cluster.x + dx + randomBetween(-1, 1);
+            values[yTrait] = cluster.y + dy + randomBetween(-1, 1);
+          }
+          return {
+            id: index === 0 ? ME_ID : `sample-${index}`,
+            name, age: randomBetween(18, 80),
+            color: index === 0 ? "#744aa0" : COLORS[randomBetween(0, COLORS.length - 1)],
+            ...(index ? { relationship: relationships[(index - 1) % relationships.length] } : {}),
+            values
+          };
+        });
         let view = { zoom: 1, x: 0.5, y: 0.5 };
         let drag = null;
+        let selected = null;
         const buttons = people.map(person => {
           const button = document.createElement("button");
           button.type = "button";
@@ -2749,6 +2762,9 @@
           frame.querySelector(".demo-x-high").textContent = xAxis.name;
           frame.querySelector(".demo-y-low").textContent = yAxis.opposite || "Low";
           frame.querySelector(".demo-y-high").textContent = yAxis.name;
+          if (selected !== null && relationshipFilters.some(filter =>
+            !filter.checked && filter.dataset.demoRelationship === people[selected].relationship)) selected = null;
+          frame.classList.toggle("has-selection", selected !== null);
           people.forEach((person, index) => {
             const point = displayedChartPoint(pointFor(person, viewed), viewport);
             const button = buttons[index];
@@ -2760,6 +2776,7 @@
             button.style.setProperty("--person-color", color);
             button.querySelector(".demo-person-name").hidden = !showNames.checked;
             button.classList.toggle("label-left", point.x > width - 90);
+            button.classList.toggle("selected", index === selected);
           });
           reset.hidden = view.zoom === 1;
         }
@@ -2780,6 +2797,8 @@
           if (!event.isPrimary || event.button !== 0 || drag) return;
           const index = buttons.indexOf(event.target.closest(".demo-person"));
           const point = eventPoint(event);
+          selected = index >= 0 ? index : null;
+          draw();
           if (index >= 0) {
             const { viewed, viewport } = bounds();
             const position = displayedChartPoint(pointFor(people[index], viewed), viewport);
@@ -2815,6 +2834,12 @@
         frame.addEventListener("pointercancel", endDrag);
         frame.addEventListener("lostpointercapture", endDrag);
         frame.addEventListener("keydown", event => {
+          if (event.key === "Escape" && selected !== null) {
+            selected = null;
+            event.preventDefault();
+            draw();
+            return;
+          }
           const direction = {
             ArrowLeft: ["x", -1], ArrowRight: ["x", 1],
             ArrowDown: ["y", -1], ArrowUp: ["y", 1]
@@ -2827,7 +2852,7 @@
             constrainChartView(view);
           } else {
             const index = buttons.indexOf(event.target);
-            if (index < 0) return;
+            if (index < 0 || index !== selected) return;
             const person = people[index];
             const trait = direction[0] === "x" ? xTrait : yTrait;
             person.values[trait] = clamp(person.values[trait] + direction[1]);
@@ -2861,7 +2886,15 @@
         });
         document.addEventListener("pointerdown", event => {
           if (!optionsToggle.parentElement.contains(event.target)) closeOptions();
+          if (event.isPrimary && event.button === 0 && selected !== null && !frame.contains(event.target)) {
+            selected = null;
+            draw();
+          }
         });
+        buttons.forEach((button, index) => button.addEventListener("focus", () => {
+          selected = index;
+          draw();
+        }));
         for (const input of [relationshipColors, showNames, ...relationshipFilters]) input.addEventListener("change", draw);
         document.getElementById("demo-shuffle").addEventListener("click", () => {
           [xTrait, yTrait] = shuffledTraitPair(traits, xTrait, yTrait);
