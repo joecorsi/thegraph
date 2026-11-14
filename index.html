@@ -220,7 +220,6 @@
       .chart-footer { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; width: 100%; margin-top: .5em; }
       .graph-footer-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--control-gap); }
       .history-controls { display: flex; gap: var(--control-gap); margin-left: auto; }
-      .history-controls svg { width: 14px; height: 14px; }
       .graph-options { position: relative; }
       .graph-options-toggle { position: relative; padding-right: 24px; padding-left: 2px; text-align: left; }
       .graph-options-toggle::after { content: ""; position: absolute; right: 6px; top: 50%; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid currentColor; transform: translateY(-50%); pointer-events: none; }
@@ -390,8 +389,8 @@
                       <button id="reset-zoom" type="button" hidden>Reset view</button>
                     </span>
                     <span class="history-controls">
-                      <button class="graph-action" id="undo" type="button" disabled aria-label="Undo" title="Undo (Cmd/Ctrl+Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10a5 5 0 0 1 5 5v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                      <button class="graph-action" id="redo" type="button" disabled aria-label="Redo" title="Redo (Shift+Cmd/Ctrl+Z)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5m5 5H10a5 5 0 0 0-5 5v1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                      <button id="undo" type="button" disabled title="Undo (Cmd/Ctrl+Z)">Undo</button>
+                      <button id="redo" type="button" disabled title="Redo (Shift+Cmd/Ctrl+Z)">Redo</button>
                     </span>
                   </div>
                 </div>
