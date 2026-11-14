@@ -321,7 +321,7 @@
         <p class="privacy-note">Your graphs are private to your account</p>
         <div class="account-bar" id="account-bar" hidden>
           <span class="graph-badge account-email" id="account-email"></span>
-          <button class="button" id="open-tutorial" type="button" aria-label="Replay tutorial" title="Replay tutorial">Help</button>
+          <button class="button" id="open-tutorial" type="button">Restart tutorial</button>
           <button class="button" id="sign-out" type="button">Sign out</button>
         </div>
       </header>
@@ -586,6 +586,7 @@
           <div id="tutorial-error" class="tutorial-error" role="alert" hidden></div>
           <div class="tutorial-actions">
             <button id="tutorial-skip" type="button">Skip</button>
+            <button id="tutorial-restart" type="button">Start over</button>
             <button id="tutorial-back" type="button">Back</button>
             <button id="tutorial-next" type="button" autofocus>Next</button>
           </div>
@@ -685,6 +686,7 @@
         tutorialProgress: document.querySelector(".tutorial-progress"),
         tutorialError: document.getElementById("tutorial-error"),
         tutorialSkip: document.getElementById("tutorial-skip"),
+        tutorialRestart: document.getElementById("tutorial-restart"),
         tutorialBack: document.getElementById("tutorial-back"),
         tutorialNext: document.getElementById("tutorial-next"),
         signOut: document.getElementById("sign-out"),
@@ -1307,6 +1309,7 @@
         [...el.tutorialProgress.children].forEach((segment, index) => {
           segment.classList.toggle("filled", index <= tutorialIndex);
         });
+        el.tutorialRestart.disabled = tutorialIndex === 0;
         el.tutorialBack.disabled = tutorialIndex === 0;
         el.tutorialNext.textContent = tutorialIndex === tutorialSteps.length - 1 ? "Finish" : "Next";
         positionTutorial();
@@ -1331,7 +1334,7 @@
         const session = tutorialSession;
         const userId = currentUser.id;
         tutorialSaving = true;
-        for (const button of [el.tutorialSkip, el.tutorialBack, el.tutorialNext]) button.disabled = true;
+        for (const button of [el.tutorialSkip, el.tutorialRestart, el.tutorialBack, el.tutorialNext]) button.disabled = true;
         el.tutorialError.hidden = true;
         try {
           if (currentUser.user_metadata?.thepear_tutorial !== "done") await saveTutorialStatus("done");
@@ -1350,6 +1353,7 @@
             tutorialSaving = false;
             el.tutorialSkip.disabled = false;
             el.tutorialNext.disabled = false;
+            el.tutorialRestart.disabled = tutorialIndex === 0;
             el.tutorialBack.disabled = tutorialIndex === 0;
             if (tutorialSaveFailed && el.tutorialDialog.open) el.tutorialNext.focus();
           }
@@ -1363,6 +1367,11 @@
 
       el.openTutorial.addEventListener("click", () => startTutorial());
       el.tutorialSkip.addEventListener("click", skipTutorial);
+      el.tutorialRestart.addEventListener("click", () => {
+        tutorialIndex = 0;
+        renderTutorial();
+        el.tutorialNext.focus();
+      });
       el.tutorialBack.addEventListener("click", () => {
         if (tutorialIndex > 0) tutorialIndex -= 1;
         renderTutorial();
@@ -1465,6 +1474,7 @@
             tutorialSaving = false;
             el.tutorialSkip.disabled = false;
             el.tutorialNext.disabled = false;
+            el.tutorialRestart.disabled = false;
           }
           graphHistories.clear();
           meHistory = null;

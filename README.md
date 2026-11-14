@@ -6,7 +6,7 @@ The hosted app is available at [joecorsi.github.io/thepear/](https://joecorsi.gi
 
 A retro loading indicator fills in steps as your profile and graphs load, then disappears when loading finishes or fails.
 
-New accounts see a five-step getting-started tour after their first graph loads. Use **Back**, **Next**, **Skip**, or Escape to navigate or close it; **Help** replays it at any time. Completing or skipping the tour is saved with the account, so it stays dismissed across devices. The tour explains the controls without changing graph data.
+New accounts see a five-step getting-started tour after their first graph loads. Use **Back**, **Next**, **Skip**, or Escape to navigate or close it. **Start over** returns to the first step, and **Restart tutorial** reopens it after closing. Completing or skipping the tour is saved with the account, so it stays dismissed across devices. The tour explains the controls without changing graph data.
 
 Use **Undo** and **Redo** at the bottom right below the graph, or Cmd/Ctrl-Z and Shift-Cmd/Ctrl-Z, to reverse or restore changes during the current session. A drag or slider gesture is one action. Text fields keep their normal typing undo. Each graph has its own history, and edits to the shared Me profile have a separate history available from any graph. Each history keeps up to 100 actions. Undo and redo save their changes; history is cleared on reload or account change. Graph creation and deletion cannot be undone.
 
