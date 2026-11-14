@@ -2706,30 +2706,30 @@
         let xTrait = "lame-cool";
         let yTrait = "benevolent-malevolent";
         const randomBetween = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
-        const relationships = Object.keys(RELATIONSHIP_COLORS);
-        for (let i = relationships.length - 1; i > 0; i--) {
-          const j = randomBetween(0, i);
-          [relationships[i], relationships[j]] = [relationships[j], relationships[i]];
-        }
-        const cluster = { x: randomBetween(35, 65), y: randomBetween(35, 65) };
-        const clusterOffsets = [[-7, 0], [6, 8], [6, -8]];
+        const shuffle = values => {
+          for (let i = values.length - 1; i > 0; i--) {
+            const j = randomBetween(0, i);
+            [values[i], values[j]] = [values[j], values[i]];
+          }
+          return values;
+        };
+        const relationships = shuffle(Object.keys(RELATIONSHIP_COLORS));
         const names = ["Me", "Alex", "Blair", "Casey", "Drew", "Emery", "Frankie", "Harper", "Jules", "Morgan", "Riley"];
         const colors = ["#1681d4", "#e83c9b", "#35a84d", "#ed8615", "#9d58cd", "#00aeb0", "#e5474e", "#6b69d6"];
+        const scores = Object.fromEntries(traits.map(trait => {
+          const values = names.map((_, index) => 15 + index * 7 + randomBetween(-1, 1));
+          if (trait.id !== xTrait && trait.id !== yTrait) return [trait.id, shuffle(values)];
+          const cluster = shuffle(values.splice(randomBetween(2, 6), 3));
+          shuffle(values);
+          return [trait.id, [values[0], ...cluster, ...values.slice(1)]];
+        }));
         const people = names.map((name, index) => {
-          const values = Object.fromEntries(traits.map(trait => [trait.id, randomBetween(0, 100)]));
-          values[xTrait] = randomBetween(12, 88);
-          values[yTrait] = randomBetween(12, 88);
-          if (index >= 1 && index <= clusterOffsets.length) {
-            const [dx, dy] = clusterOffsets[index - 1];
-            values[xTrait] = cluster.x + dx + randomBetween(-1, 1);
-            values[yTrait] = cluster.y + dy + randomBetween(-1, 1);
-          }
           return {
             id: index === 0 ? ME_ID : `sample-${index}`,
             name, age: randomBetween(18, 80),
             color: index === 0 ? "#9d58cd" : colors[randomBetween(0, colors.length - 1)],
             ...(index ? { relationship: relationships[(index - 1) % relationships.length] } : {}),
-            values
+            values: Object.fromEntries(traits.map(trait => [trait.id, scores[trait.id][index]]))
           };
         });
         let view = { zoom: 1, x: 0.5, y: 0.5 };
