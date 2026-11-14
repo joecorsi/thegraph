@@ -123,6 +123,11 @@
       .axis-y-low, .axis-y-high { left: calc(var(--axis-x, 50%) + 2px); }
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
+      .axis-at-top .axis-x-low, .axis-at-top .axis-x-high { transform: translateY(3px); }
+      .axis-at-right .axis-y-low, .axis-at-right .axis-y-high { left: calc(var(--axis-x) - 2px); transform: translateX(-100%); }
+      .axis-at-right .axis-y-low select, .axis-at-right .axis-y-high select { left: auto; right: 0; }
+      .axis-at-left .axis-x-low, .axis-at-right .axis-x-high,
+      .axis-at-top .axis-y-high, .axis-at-bottom .axis-y-low { display: none; }
       .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
       .chart-heading, .people-heading { gap: var(--control-gap); padding: var(--control-gap) 0 calc(var(--control-gap) + 5px); }
       .people-controls { display: flex; flex: 1 1 max-content; align-items: center; min-width: 0; gap: var(--control-gap); }
@@ -362,9 +367,7 @@
                         </span>
                       </span>
                       <button id="shuffle-axes" type="button" title="Randomly choose two different traits">Shuffle axes</button>
-                      <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
-                      <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
-                      <button id="reset-zoom" type="button">Reset view</button>
+                      <button id="reset-zoom" type="button" hidden>Reset view</button>
                     </span>
                     <span class="chart-info">
                       <button class="chart-info-button" type="button" aria-label="Graph controls information" aria-describedby="chart-info-tooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor"/></svg></button>
@@ -672,6 +675,7 @@
         xAxes: [document.getElementById("x-axis-low"), document.getElementById("x-axis-high")],
         yAxes: [document.getElementById("y-axis-low"), document.getElementById("y-axis-high")],
         chart: document.getElementById("chart"),
+        resetZoom: document.getElementById("reset-zoom"),
         chartLabels: document.getElementById("chart-labels"),
         chartLabelHitAreas: document.querySelectorAll(".chart-label-hit"),
         graphOptionsToggle: document.getElementById("graph-options-toggle"),
@@ -2263,17 +2267,12 @@
         zoomChart(chartView.zoom * Math.exp(-delta * 0.0015), pointerPosition(event));
       }, { passive: false });
 
-      for (const [id, factor] of [["zoom-in", 1.5], ["zoom-out", 1 / 1.5]]) {
-        document.getElementById(id).addEventListener("click", () => {
-          const rect = el.chart.getBoundingClientRect();
-          zoomChart(chartView.zoom * factor, { x: rect.width / 2, y: rect.height / 2 });
-        });
-      }
-      document.getElementById("reset-zoom").addEventListener("click", () => {
+      el.resetZoom.addEventListener("click", () => {
         if (chartDrag) return;
         chartView = { zoom: 1, x: 0.5, y: 0.5 };
         hoveredPersonId = null;
         drawChart();
+        el.chart.focus({ preventScroll: true });
       });
 
       chartFrame.addEventListener("click", event => {
@@ -2451,6 +2450,7 @@
 
       function drawChart() {
         const canvas = el.chart;
+        el.resetZoom.hidden = chartView.zoom === 1;
         const bounds = canvas.getBoundingClientRect();
         if (!state || bounds.width === 0) {
           if (placementRingFrame !== null) cancelAnimationFrame(placementRingFrame);
@@ -2482,20 +2482,22 @@
         context.lineWidth = 1;
         const midX = (viewBounds.left + viewBounds.right) / 2;
         const midY = (viewBounds.top + viewBounds.bottom) / 2;
-        chartFrame.style.setProperty("--axis-x", `${Math.max(left, Math.min(right - 20, midX))}px`);
-        chartFrame.style.setProperty("--axis-y", `${Math.max(top + 20, Math.min(bottom, midY))}px`);
+        const axisX = Math.max(left, Math.min(right, midX));
+        const axisY = Math.max(top, Math.min(bottom, midY));
+        chartFrame.style.setProperty("--axis-x", `${axisX}px`);
+        chartFrame.style.setProperty("--axis-y", `${axisY}px`);
+        chartFrame.classList.toggle("axis-at-left", midX <= left);
+        chartFrame.classList.toggle("axis-at-right", midX >= right);
+        chartFrame.classList.toggle("axis-at-top", midY <= top);
+        chartFrame.classList.toggle("axis-at-bottom", midY >= bottom);
         const personDotRadius = 6;
         const personDotBorderWidth = 2;
         context.strokeStyle = "#000";
         context.beginPath();
-        if (midY >= top && midY <= bottom) {
-          context.moveTo(left, midY);
-          context.lineTo(right, midY);
-        }
-        if (midX >= left && midX <= right) {
-          context.moveTo(midX, top);
-          context.lineTo(midX, bottom);
-        }
+        context.moveTo(left, axisY);
+        context.lineTo(right, axisY);
+        context.moveTo(axisX, top);
+        context.lineTo(axisX, bottom);
         context.stroke();
         if (midX >= left && midX <= right && midY >= top && midY <= bottom) {
           context.fillStyle = "#fff";
