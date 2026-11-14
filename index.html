@@ -2719,7 +2719,10 @@
         const scores = Object.fromEntries(traits.map(trait => {
           const values = names.map((_, index) => 15 + index * 7 + randomBetween(-1, 1));
           if (trait.id !== xTrait && trait.id !== yTrait) return [trait.id, shuffle(values)];
-          const cluster = shuffle(values.splice(randomBetween(2, 6), 3));
+          const clusterStart = randomBetween(2, 6);
+          const center = values[clusterStart + 1];
+          values.splice(clusterStart, 3);
+          const cluster = shuffle([center - 5, center, center + 5]);
           shuffle(values);
           return [trait.id, [values[0], ...cluster, ...values.slice(1)]];
         }));
