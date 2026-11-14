@@ -2560,6 +2560,7 @@
         context.textAlign = "left";
         const range = ageRange();
         const viewport = peopleBounds(width, height);
+        const stickyColor = "rgba(0, 0, 0, 0.35)";
         const plotted = chartPeople().map((person, index) => {
           const actual = chartPoint(person, viewBounds, range);
           const point = displayedChartPoint(actual, viewport);
@@ -2636,8 +2637,8 @@
         const drawDot = index => {
           const { person, point, sticky } = plotted[index];
           const { x, y } = point;
-          context.globalAlpha = hoveredIndex !== -1 && index !== hoveredIndex && index !== selectedIndex && index !== focusedIndex ? 0.4 : 1;
-          context.fillStyle = sticky ? "#767676" : state.colorByRelationship
+          context.globalAlpha = !sticky && hoveredIndex !== -1 && index !== hoveredIndex && index !== selectedIndex && index !== focusedIndex ? 0.4 : 1;
+          context.fillStyle = sticky ? stickyColor : state.colorByRelationship
             ? relationshipColor(person) : person.color;
           context.strokeStyle = "#fff";
           context.lineWidth = personDotBorderWidth;
@@ -2652,9 +2653,9 @@
         context.globalAlpha = 1;
         const drawLabel = (index, hovered = false, target = context) => {
           const { text, x: labelX, y: labelY, hit, nameBox } = labels[index];
-          const color = plotted[index].sticky ? "#767676" :
+          const color = plotted[index].sticky ? stickyColor :
             state.colorByRelationship ? relationshipColor(plotted[index].person) : "#000";
-          target.globalAlpha = hoveredIndex !== -1 && !hovered && index !== focusedIndex ? 0.4 : 1;
+          target.globalAlpha = !plotted[index].sticky && hoveredIndex !== -1 && !hovered && index !== focusedIndex ? 0.4 : 1;
           if (hovered && nameBox) {
             target.save();
             target.font = "bold 16px serif";
