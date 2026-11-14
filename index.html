@@ -123,11 +123,11 @@
       .axis-y-low, .axis-y-high { left: calc(var(--axis-x, 50%) + 2px); }
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
-      .axis-at-top .axis-x-low, .axis-at-top .axis-x-high { transform: translateY(3px); }
-      .axis-at-right .axis-y-low, .axis-at-right .axis-y-high { left: calc(var(--axis-x) - 2px); transform: translateX(-100%); }
-      .axis-at-right .axis-y-low select, .axis-at-right .axis-y-high select { left: auto; right: 0; }
-      .axis-at-left .axis-x-low, .axis-at-right .axis-x-high,
-      .axis-at-top .axis-y-high, .axis-at-bottom .axis-y-low { display: none; }
+      .axis-labels-below .axis-x-low, .axis-labels-below .axis-x-high { transform: translateY(3px); }
+      .axis-labels-left .axis-y-low, .axis-labels-left .axis-y-high { left: calc(var(--axis-x) - 2px); transform: translateX(-100%); }
+      .axis-labels-left .axis-y-low select, .axis-labels-left .axis-y-high select { left: auto; right: 0; }
+      .axis-hide-x-low .axis-x-low, .axis-hide-x-high .axis-x-high,
+      .axis-hide-y-high .axis-y-high, .axis-hide-y-low .axis-y-low { visibility: hidden; pointer-events: none; }
       .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
       .chart-heading, .people-heading { gap: var(--control-gap); padding: var(--control-gap) 0 calc(var(--control-gap) + 5px); }
       .people-controls { display: flex; flex: 1 1 max-content; align-items: center; min-width: 0; gap: var(--control-gap); }
@@ -678,6 +678,7 @@
         resetZoom: document.getElementById("reset-zoom"),
         chartLabels: document.getElementById("chart-labels"),
         chartLabelHitAreas: document.querySelectorAll(".chart-label-hit"),
+        graphFooterControls: document.querySelector(".graph-footer-controls"),
         graphOptionsToggle: document.getElementById("graph-options-toggle"),
         graphOptionsMenu: document.getElementById("graph-options-menu"),
         shuffleAxes: document.getElementById("shuffle-axes"),
@@ -996,6 +997,7 @@
         if (options.fixed) window.addEventListener("resize", closeOnScroll);
         return {
           sync,
+          close,
           destroy() {
             document.removeEventListener("pointerdown", closeOnOutsidePointer);
             if (options.fixed) document.removeEventListener("scroll", closeOnScroll, true);
@@ -2067,32 +2069,62 @@
         return { left: inset, top: inset, right: width - inset, bottom: height - inset };
       }
 
-      function viewedChartBounds(width, height) {
-        const bounds = chartBounds(width, height);
+      function viewedChartBounds(width, height, view = chartView, bounds = chartBounds(width, height)) {
         const plotWidth = bounds.right - bounds.left;
         const plotHeight = bounds.bottom - bounds.top;
-        const left = bounds.left + (0.5 - chartView.x * chartView.zoom) * plotWidth;
-        const top = bounds.top + (0.5 - chartView.y * chartView.zoom) * plotHeight;
-        return { left, top, right: left + plotWidth * chartView.zoom, bottom: top + plotHeight * chartView.zoom };
+        const left = bounds.left + (0.5 - view.x * view.zoom) * plotWidth;
+        const top = bounds.top + (0.5 - view.y * view.zoom) * plotHeight;
+        return { left, top, right: left + plotWidth * view.zoom, bottom: top + plotHeight * view.zoom };
       }
 
-      function constrainChartView() {
-        const half = 0.5 / chartView.zoom;
-        chartView.x = Math.max(half, Math.min(1 - half, chartView.x));
-        chartView.y = Math.max(half, Math.min(1 - half, chartView.y));
+      function constrainChartView(view = chartView) {
+        const half = 0.5 / view.zoom;
+        view.x = Math.max(half, Math.min(1 - half, view.x));
+        view.y = Math.max(half, Math.min(1 - half, view.y));
+      }
+
+      function pointWithinChart(point, bounds) {
+        return point && point.x >= bounds.left && point.x <= bounds.right &&
+          point.y >= bounds.top && point.y <= bounds.bottom;
       }
 
       function zoomChart(zoom, point) {
         if (!state || chartDrag) return;
         const rect = el.chart.getBoundingClientRect();
         const bounds = chartBounds(rect.width, rect.height);
-        const x = (point.x - bounds.left) / (bounds.right - bounds.left) - 0.5;
-        const y = (point.y - bounds.top) / (bounds.bottom - bounds.top) - 0.5;
-        const next = Math.max(1, Math.min(8, zoom));
-        chartView.x += x / chartView.zoom - x / next;
-        chartView.y += y / chartView.zoom - y / next;
-        chartView.zoom = next;
-        constrainChartView();
+        const x = Math.max(0, Math.min(1, (point.x - bounds.left) / (bounds.right - bounds.left))) - 0.5;
+        const y = Math.max(0, Math.min(1, (point.y - bounds.top) / (bounds.bottom - bounds.top))) - 0.5;
+        let next = Math.max(1, Math.min(8, zoom));
+        const viewAtZoom = level => {
+          const view = {
+            zoom: level,
+            x: chartView.x + x / chartView.zoom - x / level,
+            y: chartView.y + y / chartView.zoom - y / level
+          };
+          constrainChartView(view);
+          return view;
+        };
+        if (next > chartView.zoom) {
+          const range = ageRange();
+          const people = chartPeople().filter(person => chartPoint(person, bounds, range));
+          const hasVisiblePerson = view => {
+            const viewedBounds = viewedChartBounds(rect.width, rect.height, view, bounds);
+            return people.some(person => pointWithinChart(chartPoint(person, viewedBounds, range), bounds));
+          };
+          if (people.length && !hasVisiblePerson(chartView)) return;
+          if (people.length && !hasVisiblePerson(viewAtZoom(next))) {
+            let low = chartView.zoom;
+            let high = next;
+            // The zoomed viewport shrinks around the pointer, so visibility changes only once.
+            for (let i = 0; i < 32; i++) {
+              const mid = (low + high) / 2;
+              if (hasVisiblePerson(viewAtZoom(mid))) low = mid;
+              else high = mid;
+            }
+            next = low;
+          }
+        }
+        chartView = viewAtZoom(next);
         hoveredPersonId = null;
         drawChart();
       }
@@ -2140,9 +2172,7 @@
         const viewport = chartBounds(point.width, point.height);
         const range = ageRange();
         const people = chartPeople();
-        const isHit = position => position &&
-          position.x >= viewport.left && position.x <= viewport.right &&
-          position.y >= viewport.top && position.y <= viewport.bottom &&
+        const isHit = position => pointWithinChart(position, viewport) &&
           Math.hypot(point.x - position.x, point.y - position.y) <= 12;
         const selected = people.find(person => person.id === selectedPersonId);
         const selectedPosition = selected && chartPoint(selected, bounds, range);
@@ -2484,12 +2514,25 @@
         const midY = (viewBounds.top + viewBounds.bottom) / 2;
         const axisX = Math.max(left, Math.min(right, midX));
         const axisY = Math.max(top, Math.min(bottom, midY));
+        const [xLow, xHigh] = el.xAxes.map(select => select.parentElement.getBoundingClientRect());
+        const [yLow, yHigh] = el.yAxes.map(select => select.parentElement.getBoundingClientRect());
+        const gap = parseFloat(getComputedStyle(el.graphFooterControls).columnGap);
+        const hideXLow = axisX - left < xLow.width + gap;
+        const hideXHigh = right - axisX < xHigh.width + gap;
+        const hideYLow = bottom - axisY < yLow.height + gap;
+        const hideYHigh = axisY - top < yHigh.height + gap;
+        for (const [select, hide] of [[el.xAxes[0], hideXLow], [el.xAxes[1], hideXHigh],
+                                      [el.yAxes[0], hideYLow], [el.yAxes[1], hideYHigh]]) {
+          if (hide) axisDropdowns.get(select).close();
+        }
         chartFrame.style.setProperty("--axis-x", `${axisX}px`);
         chartFrame.style.setProperty("--axis-y", `${axisY}px`);
-        chartFrame.classList.toggle("axis-at-left", midX <= left);
-        chartFrame.classList.toggle("axis-at-right", midX >= right);
-        chartFrame.classList.toggle("axis-at-top", midY <= top);
-        chartFrame.classList.toggle("axis-at-bottom", midY >= bottom);
+        chartFrame.classList.toggle("axis-labels-below", hideYHigh);
+        chartFrame.classList.toggle("axis-labels-left", right - axisX < Math.max(yLow.width, yHigh.width) + gap);
+        chartFrame.classList.toggle("axis-hide-x-low", hideXLow);
+        chartFrame.classList.toggle("axis-hide-x-high", hideXHigh);
+        chartFrame.classList.toggle("axis-hide-y-low", hideYLow);
+        chartFrame.classList.toggle("axis-hide-y-high", hideYHigh);
         const personDotRadius = 6;
         const personDotBorderWidth = 2;
         context.strokeStyle = "#000";
@@ -2513,7 +2556,7 @@
           person, index, point: chartPoint(person, viewBounds, range)
         })).filter(item => item.point);
         const count = allPlotted.length;
-        const plotted = allPlotted.filter(({ point }) => point.x >= left && point.x <= right && point.y >= top && point.y <= bottom);
+        const plotted = allPlotted.filter(({ point }) => pointWithinChart(point, { left, top, right, bottom }));
         el.peopleCountLabel.textContent = `${count} ${count === 1 ? "person" : "people"}`;
         const labels = state.hideNames ? [] : plotted.map(({ person, index, point }) => {
           const { x, y } = point;
