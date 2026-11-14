@@ -217,8 +217,9 @@
       .person-visibility[aria-pressed="false"] { border: 0; border-radius: 2px; padding: 3px 5px; background: #000; color: #fff; }
       .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
       .chart-heading h2, .people-heading h2 { margin: 0; font-size: 1.25em; font-weight: normal; }
-      .chart-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
+      .chart-footer { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; width: 100%; margin-top: .5em; }
       .graph-footer-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--control-gap); }
+      .history-controls { display: flex; gap: var(--control-gap); margin-left: auto; }
       .graph-options { position: relative; }
       .graph-options-toggle { position: relative; padding-right: 24px; padding-left: 2px; text-align: left; }
       .graph-options-toggle::after { content: ""; position: absolute; right: 6px; top: 50%; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid currentColor; transform: translateY(-50%); pointer-events: none; }
@@ -384,10 +385,12 @@
                           <label><input type="checkbox" data-graph-relationship="lover"> Lover</label>
                         </span>
                       </span>
-                      <button id="undo" type="button" disabled title="Undo (Cmd/Ctrl+Z)">Undo</button>
-                      <button id="redo" type="button" disabled title="Redo (Shift+Cmd/Ctrl+Z)">Redo</button>
                       <button id="shuffle-axes" type="button" title="Randomly choose two different traits">Shuffle axes</button>
                       <button id="reset-zoom" type="button" hidden>Reset view</button>
+                    </span>
+                    <span class="history-controls">
+                      <button id="undo" type="button" disabled title="Undo (Cmd/Ctrl+Z)">Undo</button>
+                      <button id="redo" type="button" disabled title="Redo (Shift+Cmd/Ctrl+Z)">Redo</button>
                     </span>
                   </div>
                 </div>
