@@ -2595,6 +2595,7 @@
         };
         const clusters = [];
         for (let index = 0; index < plotted.length; index++) {
+          if (!plotted[index].sticky) continue;
           let current = describe([index]);
           for (let i = 0; i < clusters.length;) {
             if (current.boxes.some(a => clusters[i].boxes.some(b => overlaps(a, b)))) {
