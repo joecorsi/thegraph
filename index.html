@@ -2088,6 +2088,56 @@
           point.y >= bounds.top && point.y <= bounds.bottom;
       }
 
+      function panChart(dx, dy, width, height) {
+        if (!state) return;
+        const next = { ...chartView, x: chartView.x + dx, y: chartView.y + dy };
+        constrainChartView(next);
+        dx = next.x - chartView.x;
+        dy = next.y - chartView.y;
+        if (!dx && !dy) return;
+
+        const bounds = chartBounds(width, height);
+        const viewedBounds = viewedChartBounds(width, height, chartView, bounds);
+        const range = ageRange();
+        const points = chartPeople().map(person => chartPoint(person, viewedBounds, range)).filter(Boolean);
+        if (points.length) {
+          const shiftX = -dx * (bounds.right - bounds.left) * chartView.zoom;
+          const shiftY = -dy * (bounds.bottom - bounds.top) * chartView.zoom;
+          const intervals = [];
+          for (const point of points) {
+            let start = 0;
+            let end = 1;
+            for (const [position, shift, min, max] of [
+              [point.x, shiftX, bounds.left, bounds.right],
+              [point.y, shiftY, bounds.top, bounds.bottom]
+            ]) {
+              if (!shift) {
+                if (position < min || position > max) end = -1;
+                continue;
+              }
+              const a = (min - position) / shift;
+              const b = (max - position) / shift;
+              start = Math.max(start, Math.min(a, b));
+              end = Math.min(end, Math.max(a, b));
+            }
+            if (start <= end) intervals.push({ start, end });
+          }
+          intervals.sort((a, b) => a.start - b.start);
+          if (intervals.length) {
+            let limit = intervals[0].end;
+            // Join overlapping visibility intervals so one dot can take over from another.
+            for (const interval of intervals.slice(1)) {
+              if (interval.start > limit + 1e-12) break;
+              limit = Math.max(limit, interval.end);
+            }
+            const fraction = limit < 1 ? Math.max(intervals[0].start, limit - 1e-10) : 1;
+            next.x = chartView.x + dx * fraction;
+            next.y = chartView.y + dy * fraction;
+          }
+        }
+        chartView = next;
+      }
+
       function zoomChart(zoom, point) {
         if (!state || chartDrag) return;
         const rect = el.chart.getBoundingClientRect();
@@ -2368,11 +2418,13 @@
         if (event.pointerId !== chartDrag.pointerId) return;
         if (chartDrag.pan) {
           const bounds = chartBounds(point.width, point.height);
-          chartView.x -= (point.x - chartDrag.x) / ((bounds.right - bounds.left) * chartView.zoom);
-          chartView.y -= (point.y - chartDrag.y) / ((bounds.bottom - bounds.top) * chartView.zoom);
+          panChart(
+            -(point.x - chartDrag.x) / ((bounds.right - bounds.left) * chartView.zoom),
+            -(point.y - chartDrag.y) / ((bounds.bottom - bounds.top) * chartView.zoom),
+            point.width, point.height
+          );
           chartDrag.x = point.x;
           chartDrag.y = point.y;
-          constrainChartView();
           drawChart();
           return;
         }
@@ -2435,9 +2487,9 @@
         }[event.key];
         if (direction && event.shiftKey && chartView.zoom > 1 && !chartDrag) {
           const amount = 0.1 / chartView.zoom;
-          if (direction[0] === "x") chartView.x += direction[1] * amount;
-          else chartView.y -= direction[1] * amount;
-          constrainChartView();
+          const rect = el.chart.getBoundingClientRect();
+          panChart(direction[0] === "x" ? direction[1] * amount : 0,
+            direction[0] === "y" ? -direction[1] * amount : 0, rect.width, rect.height);
           hoveredPersonId = null;
           drawChart();
           event.preventDefault();
