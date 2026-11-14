@@ -113,14 +113,14 @@
       .axis-end select::-webkit-scrollbar-track { background: #efefef; }
       .axis-end select::-webkit-scrollbar-thumb { border: 2px solid #efefef; border-radius: 6px; background: #999; }
       @supports (-moz-appearance: none) { .axis-end select { scrollbar-color: #999 #efefef; } }
-      .axis-x-low, .axis-x-high { top: 50%; transform: translateY(calc(-100% - 3px)); }
+      .axis-x-low, .axis-x-high { top: var(--axis-y, 50%); transform: translateY(calc(-100% - 3px)); }
       .axis-x-low { left: var(--plot-inset); }
       .axis-x-high { right: var(--plot-inset); }
       .axis-x-low .axis-toggle { padding-left: 0; }
       .axis-x-high .axis-toggle { padding-right: 17px; }
       .axis-x-high .axis-toggle::after { right: 1px; }
       .axis-x-high select { left: auto; right: 0; }
-      .axis-y-low, .axis-y-high { left: calc(50% + 2px); }
+      .axis-y-low, .axis-y-high { left: calc(var(--axis-x, 50%) + 2px); }
       .axis-y-low { bottom: calc(var(--plot-inset) - 3px); }
       .axis-y-high { top: calc(var(--plot-inset) - 3px); }
       .people-content { --person-action-width: calc(44px + var(--control-gap)); display: grid; flex: 1; grid-template-rows: auto auto auto minmax(0, 1fr); width: 100%; min-height: 0; }
@@ -201,7 +201,7 @@
       .person-color { flex: none; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
       .chart-heading h2, .people-heading h2 { margin: 0; font-size: 1.25em; font-weight: normal; }
       .chart-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
-      .graph-footer-controls { display: flex; align-items: center; gap: var(--control-gap); }
+      .graph-footer-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--control-gap); }
       .graph-options { position: relative; }
       .graph-options-toggle { position: relative; padding-right: 24px; padding-left: 2px; text-align: left; }
       .graph-options-toggle::after { content: ""; position: absolute; right: 6px; top: 50%; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid currentColor; transform: translateY(-50%); pointer-events: none; }
@@ -362,10 +362,13 @@
                         </span>
                       </span>
                       <button id="shuffle-axes" type="button" title="Randomly choose two different traits">Shuffle axes</button>
+                      <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+                      <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+                      <button id="reset-zoom" type="button">Reset view</button>
                     </span>
                     <span class="chart-info">
                       <button class="chart-info-button" type="button" aria-label="Graph controls information" aria-describedby="chart-info-tooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor"/></svg></button>
-                      <span class="chart-info-tooltip" id="chart-info-tooltip" role="tooltip">Select a dot, then use the mouse or arrow keys to adjust values.</span>
+                      <span class="chart-info-tooltip" id="chart-info-tooltip" role="tooltip">Scroll to zoom, drag empty space or use Shift and arrow keys to pan. Select a dot, then use the mouse or arrow keys to adjust values.</span>
                     </span>
                   </div>
                 </div>
@@ -721,6 +724,7 @@
       let authNoticeTimer = null;
       let appNoticeTimer = null;
       let chartDrag = null;
+      let chartView = { zoom: 1, x: 0.5, y: 0.5 };
       let hoveredPersonId = null;
       let focusedNamePersonId = null;
       let nameFocusRingStart = null;
@@ -1323,6 +1327,8 @@
         setGraphDate(el.graphModified, "Modified", graph.updated_at);
         closeGraphOptions();
         activeGraphId = graph.id;
+        chartView = { zoom: 1, x: 0.5, y: 0.5 };
+        chartDrag = null;
         activeGraphName = graph.name;
         hoveredPersonId = null;
         focusedNamePersonId = null;
@@ -2057,6 +2063,36 @@
         return { left: inset, top: inset, right: width - inset, bottom: height - inset };
       }
 
+      function viewedChartBounds(width, height) {
+        const bounds = chartBounds(width, height);
+        const plotWidth = bounds.right - bounds.left;
+        const plotHeight = bounds.bottom - bounds.top;
+        const left = bounds.left + (0.5 - chartView.x * chartView.zoom) * plotWidth;
+        const top = bounds.top + (0.5 - chartView.y * chartView.zoom) * plotHeight;
+        return { left, top, right: left + plotWidth * chartView.zoom, bottom: top + plotHeight * chartView.zoom };
+      }
+
+      function constrainChartView() {
+        const half = 0.5 / chartView.zoom;
+        chartView.x = Math.max(half, Math.min(1 - half, chartView.x));
+        chartView.y = Math.max(half, Math.min(1 - half, chartView.y));
+      }
+
+      function zoomChart(zoom, point) {
+        if (!state || chartDrag) return;
+        const rect = el.chart.getBoundingClientRect();
+        const bounds = chartBounds(rect.width, rect.height);
+        const x = (point.x - bounds.left) / (bounds.right - bounds.left) - 0.5;
+        const y = (point.y - bounds.top) / (bounds.bottom - bounds.top) - 0.5;
+        const next = Math.max(1, Math.min(8, zoom));
+        chartView.x += x / chartView.zoom - x / next;
+        chartView.y += y / chartView.zoom - y / next;
+        chartView.zoom = next;
+        constrainChartView();
+        hoveredPersonId = null;
+        drawChart();
+      }
+
       function chartPeople() {
         return mePerson ? [...state.people, mePerson] : state.people;
       }
@@ -2096,18 +2132,23 @@
 
       function personAtPoint(point) {
         if (!state || !state.xTrait || !state.yTrait) return null;
-        const bounds = chartBounds(point.width, point.height);
+        const bounds = viewedChartBounds(point.width, point.height);
+        const viewport = chartBounds(point.width, point.height);
         const range = ageRange();
         const people = chartPeople();
+        const isHit = position => position &&
+          position.x >= viewport.left && position.x <= viewport.right &&
+          position.y >= viewport.top && position.y <= viewport.bottom &&
+          Math.hypot(point.x - position.x, point.y - position.y) <= 12;
         const selected = people.find(person => person.id === selectedPersonId);
         const selectedPosition = selected && chartPoint(selected, bounds, range);
-        if (selectedPosition && Math.hypot(point.x - selectedPosition.x, point.y - selectedPosition.y) <= 12) return selected;
+        if (isHit(selectedPosition)) return selected;
         const focused = people.find(person => person.id === focusedNamePersonId);
         const focusedPosition = focused && chartPoint(focused, bounds, range);
-        if (focusedPosition && Math.hypot(point.x - focusedPosition.x, point.y - focusedPosition.y) <= 12) return focused;
+        if (isHit(focusedPosition)) return focused;
         for (let i = people.length - 1; i >= 0; i--) {
           const position = chartPoint(people[i], bounds, range);
-          if (position && Math.hypot(point.x - position.x, point.y - position.y) <= 12) return people[i];
+          if (isHit(position)) return people[i];
         }
         return null;
       }
@@ -2215,6 +2256,26 @@
       const chartFrame = el.chart.parentElement;
       const isChartTarget = target => target === el.chart || target.classList.contains("chart-label-hit");
 
+      chartFrame.addEventListener("wheel", event => {
+        if (!isChartTarget(event.target) || !state || chartDrag) return;
+        event.preventDefault();
+        const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? el.chart.clientHeight : 1);
+        zoomChart(chartView.zoom * Math.exp(-delta * 0.0015), pointerPosition(event));
+      }, { passive: false });
+
+      for (const [id, factor] of [["zoom-in", 1.5], ["zoom-out", 1 / 1.5]]) {
+        document.getElementById(id).addEventListener("click", () => {
+          const rect = el.chart.getBoundingClientRect();
+          zoomChart(chartView.zoom * factor, { x: rect.width / 2, y: rect.height / 2 });
+        });
+      }
+      document.getElementById("reset-zoom").addEventListener("click", () => {
+        if (chartDrag) return;
+        chartView = { zoom: 1, x: 0.5, y: 0.5 };
+        hoveredPersonId = null;
+        drawChart();
+      });
+
       chartFrame.addEventListener("click", event => {
         if (event.button !== 0 || !event.target.closest(".axis-end")) return;
         if (!selectedPersonId && !foregroundPersonId && !hoveredPersonId) return;
@@ -2231,9 +2292,16 @@
         if (selected) foregroundPersonId = selected.id;
         selectChartPerson(selected);
         el.chart.focus({ preventScroll: true });
+        if (!personId && chartView.zoom > 1) {
+          chartDrag = { pointerId: event.pointerId, pan: true, x: point.x, y: point.y };
+          el.chart.setPointerCapture(event.pointerId);
+          chartFrame.style.cursor = "grabbing";
+          event.preventDefault();
+          return;
+        }
         if (state?.xTrait === AGE_AXIS && state?.yTrait === AGE_AXIS) return;
         if (!person) return;
-        const position = chartPoint(person, chartBounds(point.width, point.height), ageRange());
+        const position = chartPoint(person, viewedChartBounds(point.width, point.height), ageRange());
         chartDrag = {
           pointerId: event.pointerId,
           graphId: activeGraphId,
@@ -2264,15 +2332,26 @@
             hoveredPersonId = personId;
             drawChart();
           }
-          chartFrame.style.cursor = pointPerson && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) ? "move" : "";
+          chartFrame.style.cursor = pointPerson && !(state.xTrait === AGE_AXIS && state.yTrait === AGE_AXIS) ? "move" :
+            !personId && chartView.zoom > 1 ? "grab" : "";
           return;
         }
         if (event.pointerId !== chartDrag.pointerId) return;
+        if (chartDrag.pan) {
+          const bounds = chartBounds(point.width, point.height);
+          chartView.x -= (point.x - chartDrag.x) / ((bounds.right - bounds.left) * chartView.zoom);
+          chartView.y -= (point.y - chartDrag.y) / ((bounds.bottom - bounds.top) * chartView.zoom);
+          chartDrag.x = point.x;
+          chartDrag.y = point.y;
+          constrainChartView();
+          drawChart();
+          return;
+        }
         if (!state || activeGraphId !== chartDrag.graphId ||
             state.xTrait !== chartDrag.xTrait || state.yTrait !== chartDrag.yTrait) return;
         const person = chartPeople().find(item => item.id === chartDrag.personId);
         if (!person) return;
-        const bounds = chartBounds(point.width, point.height);
+        const bounds = viewedChartBounds(point.width, point.height);
         const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
         const x = (point.x - chartDrag.offsetX - bounds.left) / (bounds.right - bounds.left) * 100;
         const y = (bounds.bottom - point.y + chartDrag.offsetY) / (bounds.bottom - bounds.top) * 100;
@@ -2325,6 +2404,16 @@
           ArrowLeft: ["x", -1], ArrowRight: ["x", 1],
           ArrowDown: ["y", -1], ArrowUp: ["y", 1]
         }[event.key];
+        if (direction && event.shiftKey && chartView.zoom > 1 && !chartDrag) {
+          const amount = 0.1 / chartView.zoom;
+          if (direction[0] === "x") chartView.x += direction[1] * amount;
+          else chartView.y -= direction[1] * amount;
+          constrainChartView();
+          hoveredPersonId = null;
+          drawChart();
+          event.preventDefault();
+          return;
+        }
         if (!direction || !state || !selectedPersonId || chartDrag) return;
         const person = chartPeople().find(item => item.id === selectedPersonId);
         if (!person) return;
@@ -2387,32 +2476,42 @@
         context.fillRect(0, 0, width, height);
 
         const { left, top, right, bottom } = chartBounds(width, height);
+        const viewBounds = viewedChartBounds(width, height);
         context.font = "12px serif";
         context.textBaseline = "middle";
         context.lineWidth = 1;
-        const midX = (left + right) / 2;
-        const midY = (top + bottom) / 2;
+        const midX = (viewBounds.left + viewBounds.right) / 2;
+        const midY = (viewBounds.top + viewBounds.bottom) / 2;
+        chartFrame.style.setProperty("--axis-x", `${Math.max(left, Math.min(right - 20, midX))}px`);
+        chartFrame.style.setProperty("--axis-y", `${Math.max(top + 20, Math.min(bottom, midY))}px`);
         const personDotRadius = 6;
         const personDotBorderWidth = 2;
         context.strokeStyle = "#000";
         context.beginPath();
-        context.moveTo(left, midY);
-        context.lineTo(right, midY);
-        context.moveTo(midX, top);
-        context.lineTo(midX, bottom);
+        if (midY >= top && midY <= bottom) {
+          context.moveTo(left, midY);
+          context.lineTo(right, midY);
+        }
+        if (midX >= left && midX <= right) {
+          context.moveTo(midX, top);
+          context.lineTo(midX, bottom);
+        }
         context.stroke();
-        context.fillStyle = "#fff";
-        context.beginPath();
-        context.arc(midX, midY, personDotRadius - personDotBorderWidth / 2, 0, Math.PI * 2);
-        context.fill();
+        if (midX >= left && midX <= right && midY >= top && midY <= bottom) {
+          context.fillStyle = "#fff";
+          context.beginPath();
+          context.arc(midX, midY, personDotRadius - personDotBorderWidth / 2, 0, Math.PI * 2);
+          context.fill();
+        }
 
         context.font = "bold 12px serif";
         context.textAlign = "left";
         const range = ageRange();
-        const plotted = chartPeople().map((person, index) => ({
-          person, index, point: chartPoint(person, { left, top, right, bottom }, range)
+        const allPlotted = chartPeople().map((person, index) => ({
+          person, index, point: chartPoint(person, viewBounds, range)
         })).filter(item => item.point);
-        const count = plotted.length;
+        const count = allPlotted.length;
+        const plotted = allPlotted.filter(({ point }) => point.x >= left && point.x <= right && point.y >= top && point.y <= bottom);
         el.peopleCountLabel.textContent = `${count} ${count === 1 ? "person" : "people"}`;
         const labels = state.hideNames ? [] : plotted.map(({ person, index, point }) => {
           const { x, y } = point;
