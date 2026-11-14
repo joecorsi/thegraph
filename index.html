@@ -752,7 +752,6 @@
       let historySequence = 0;
       let historyGesture = null;
       let historyTextEdit = null;
-      let historyInput = null;
       let authNoticeTimer = null;
       let appNoticeTimer = null;
       let chartDrag = null;
@@ -1462,13 +1461,13 @@
         }
       }
 
-      function schedulePersonSave(person, record = true) {
+      function schedulePersonSave(person, record = true, group = null) {
         if (person !== mePerson) {
-          scheduleSave(record);
+          scheduleSave(record, group);
           return;
         }
         if (!currentUser) return;
-        if (record) recordHistory("me");
+        if (record) recordHistory("me", group);
         meSaveVersion += 1;
         pendingMeSave = { me: true, userId: currentUser.id, data: JSON.parse(JSON.stringify(person)), version: meSaveVersion };
         setSaveStatus("Saving...", { inProgress: true });
@@ -1486,9 +1485,9 @@
         }, 500);
       }
 
-      function scheduleSave(record = true) {
+      function scheduleSave(record = true, group = null) {
         if (!currentUser || !activeGraphId) return;
-        if (record) recordHistory("graph");
+        if (record) recordHistory("graph", group);
         saveVersion += 1;
         pendingSave = {
           id: activeGraphId,
@@ -1532,19 +1531,12 @@
         updateHistoryButtons();
       }
 
-      function historyEditGroup() {
-        if (chartDrag && !chartDrag.pan) return chartDrag;
-        if (historyInput?.target === historyTextEdit?.target) return historyTextEdit;
-        if (historyInput?.target === historyGesture?.target) return historyGesture;
-        return null;
-      }
-
-      function recordHistory(kind) {
+      function recordHistory(kind, group = null) {
         const history = kind === "me" ? meHistory : graphHistories.get(activeGraphId);
         if (!history) throw new Error("Undo history is not initialized.");
         const value = currentHistoryValue(kind);
         if (sameHistoryValue(history.current, value)) return;
-        const group = historyEditGroup();
+        if (!group && chartDrag && !chartDrag.pan) group = chartDrag;
         const last = history.past[history.past.length - 1];
         const canMerge = group && last?.group === group && last.sequence === historySequence;
         graphHistories.get(activeGraphId).future.length = 0;
@@ -1616,10 +1608,6 @@
         const target = event.target;
         historyTextEdit = target instanceof HTMLInputElement && ["text", "number", "search"].includes(target.type)
           ? { target } : null;
-      }, true);
-      document.addEventListener("input", event => {
-        historyInput = event;
-        queueMicrotask(() => { if (historyInput === event) historyInput = null; });
       }, true);
       document.addEventListener("pointerdown", event => {
         if (event.target instanceof HTMLInputElement && event.target.type === "range") {
@@ -1933,7 +1921,7 @@
               }
               if (selectedPersonId === person.id) selectChartPerson(person);
               else drawChart();
-              schedulePersonSave(person);
+              schedulePersonSave(person, true, historyTextEdit?.target === nameInput ? historyTextEdit : null);
             });
             nameInput.addEventListener("change", () => {
               setTimeout(() => {
@@ -2001,7 +1989,7 @@
               if (select.value === AGE_AXIS) axisDropdowns.get(select).sync();
             }
             drawChart();
-            schedulePersonSave(person);
+            schedulePersonSave(person, true, historyTextEdit?.target === ageInput ? historyTextEdit : null);
           });
           ageInput.addEventListener("change", () => {
             if (el.peopleSortSelect.value === "age") setTimeout(sortPeopleCards, 0);
@@ -2112,7 +2100,7 @@
               person.values[trait.id] = value;
               markPersonModified(person);
               drawChart();
-              schedulePersonSave(person);
+              schedulePersonSave(person, true, historyGesture?.target === slider ? historyGesture : null);
             });
             row.append(lowLabel, slider, highLabel);
             traitList.append(row);
