@@ -57,9 +57,9 @@
       .masthead .account-bar { justify-self: end; }
       .privacy-note { display: none; margin: 0; text-align: center; font-size: .85em; }
       .page:has(#workspace:not([hidden])) .privacy-note { display: block; }
-      .auth-panel:not([hidden]) { display: grid; width: fit-content; max-width: 100%; grid-template-columns: minmax(0, 300px) minmax(0, 600px); grid-template-rows: auto auto; align-items: start; column-gap: 2rem; }
+      .auth-panel:not([hidden]) { display: grid; width: fit-content; max-width: 100%; grid-template-columns: min(300px, 100%) minmax(0, 600px); grid-template-rows: auto auto; align-items: start; column-gap: 2rem; }
       .auth-copy { display: grid; grid-column: 1; grid-row: 1 / span 2; grid-template-rows: subgrid; width: 100%; max-width: 300px; align-self: stretch; }
-      #auth-title { margin-bottom: 0; font-size: 1.9em; }
+      #auth-title { margin-bottom: 0; font-size: min(1.9em, calc((100vw - 50px) / 10)); white-space: nowrap; }
       .auth-details { min-width: 0; }
       .auth-details .muted { text-align: justify; }
       .demo { grid-column: 2; grid-row: 2; }
@@ -84,6 +84,7 @@
       .demo-y-low { bottom: 20px; }
       .demo-y-high { top: 20px; }
       .demo-person { position: absolute; z-index: 2; display: flex; align-items: center; gap: 3px; padding: 0; border: 0; background: transparent; color: #000; font: bold 12px serif; white-space: nowrap; transform: translate(-6px, -50%); cursor: move; touch-action: none; }
+      .demo-person[hidden] { display: none; }
       .demo-person.label-left { flex-direction: row-reverse; transform: translate(calc(-100% + 6px), -50%); }
       .demo-person:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
       .demo-person-dot { box-sizing: border-box; flex: none; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: var(--person-color); }
@@ -400,7 +401,24 @@
               <span class="demo-axis-label demo-y-high">Malevolent</span>
             </div>
             <p class="visually-hidden" id="demo-help">Drag a person, scroll to zoom, or drag empty space to pan.</p>
-            <button type="button" id="demo-reset" hidden>Reset view</button>
+            <div class="chart-footer">
+              <span class="graph-footer-controls">
+                <span class="graph-options">
+                  <button class="graph-options-toggle" id="demo-options-toggle" type="button" aria-expanded="false" aria-controls="demo-options-menu">Options</button>
+                  <span class="graph-options-menu" id="demo-options-menu" role="group" aria-label="Sample graph options" hidden>
+                    <label><input type="checkbox" id="demo-relationship-colors"> Color by relationship</label>
+                    <label><input type="checkbox" id="demo-show-names" checked> Names</label>
+                    <span class="graph-options-separator" role="separator"></span>
+                    <label><input type="checkbox" data-demo-relationship="friend" checked> Friend</label>
+                    <label><input type="checkbox" data-demo-relationship="family" checked> Family</label>
+                    <label><input type="checkbox" data-demo-relationship="enemy" checked> Foe</label>
+                    <label><input type="checkbox" data-demo-relationship="lover" checked> Lover</label>
+                  </span>
+                </span>
+                <button type="button" id="demo-shuffle" title="Randomly choose two different traits">Shuffle axes</button>
+                <button type="button" id="demo-reset" hidden>Reset view</button>
+              </span>
+            </div>
           </div>
         </section>
 
@@ -807,7 +825,7 @@
         resetZoom: document.getElementById("reset-zoom"),
         chartLabels: document.getElementById("chart-labels"),
         chartLabelHitAreas: document.querySelectorAll(".chart-label-hit"),
-        graphFooterControls: document.querySelector(".graph-footer-controls"),
+        graphFooterControls: document.querySelector("#workspace .graph-footer-controls"),
         graphOptionsToggle: document.getElementById("graph-options-toggle"),
         graphOptionsMenu: document.getElementById("graph-options-menu"),
         undo: document.getElementById("undo"),
@@ -2642,21 +2660,50 @@
         view.y = Math.max(half, Math.min(1 - half, view.y));
       }
 
+      function shuffledTraitPair(traits, currentXId, currentYId) {
+        const count = traits.length;
+        const currentX = traits.findIndex(trait => trait.id === currentXId);
+        const currentY = traits.findIndex(trait => trait.id === currentYId);
+        const currentPair = currentX >= 0 && currentY >= 0 && currentX !== currentY
+          ? currentX * (count - 1) + currentY - Number(currentY > currentX) : -1;
+        let pair = Math.floor(Math.random() * (count * (count - 1) - Number(currentPair !== -1)));
+        if (currentPair !== -1 && pair >= currentPair) pair++;
+        const x = Math.floor(pair / (count - 1));
+        let y = pair % (count - 1);
+        if (y >= x) y++;
+        return [traits[x].id, traits[y].id];
+      }
+
       function setupDemoGraph() {
         const frame = document.getElementById("demo-graph");
         const reset = document.getElementById("demo-reset");
+        const optionsToggle = document.getElementById("demo-options-toggle");
+        const optionsMenu = document.getElementById("demo-options-menu");
+        const relationshipColors = document.getElementById("demo-relationship-colors");
+        const showNames = document.getElementById("demo-show-names");
+        const relationshipFilters = [...optionsMenu.querySelectorAll("[data-demo-relationship]")];
+        const traits = DEFAULT_TRAITS;
+        let xTrait = "lame-cool";
+        let yTrait = "benevolent-malevolent";
         const people = [
-          { name: "Alex", color: "#145c92", x: 18, y: 76 },
-          { name: "Blair", color: "#c52d83", x: 42, y: 85 },
-          { name: "Casey", color: "#468949", x: 73, y: 78 },
-          { name: "Drew", color: "#dc7720", x: 85, y: 55 },
-          { name: "Emery", color: "#009a9a", x: 57, y: 62 },
-          { name: "Frankie", color: "#744aa0", x: 25, y: 53 },
-          { name: "Harper", color: "#b45361", x: 12, y: 29 },
-          { name: "Jules", color: "#528347", x: 38, y: 20 },
+          { id: ME_ID, name: "Me", color: "#744aa0", x: 50, y: 50 },
+          { name: "Alex", color: "#145c92", relationship: "friend", x: 18, y: 76 },
+          { name: "Blair", color: "#c52d83", relationship: "family", x: 42, y: 85 },
+          { name: "Casey", color: "#468949", relationship: "friend", x: 73, y: 78 },
+          { name: "Drew", color: "#dc7720", relationship: "lover", x: 85, y: 55 },
+          { name: "Emery", color: "#009a9a", relationship: "friend", x: 57, y: 62 },
+          { name: "Frankie", color: "#744aa0", relationship: "family", x: 25, y: 53 },
+          { name: "Harper", color: "#b45361", relationship: "enemy", x: 12, y: 29 },
+          { name: "Jules", color: "#528347", relationship: "friend", x: 38, y: 20 },
           { name: "Morgan", color: "#567ab3", x: 64, y: 31 },
-          { name: "Riley", color: "#987629", x: 86, y: 14 }
-        ];
+          { name: "Riley", color: "#987629", relationship: "enemy", x: 86, y: 14 }
+        ].map(({ x, y, ...person }, personIndex) => ({
+          ...person,
+          values: Object.fromEntries(traits.map((trait, traitIndex) => [
+            trait.id, trait.id === xTrait ? x : trait.id === yTrait ? y :
+              10 + (personIndex * 37 + traitIndex * 29) % 81
+          ]))
+        }));
         let view = { zoom: 1, x: 0.5, y: 0.5 };
         let drag = null;
         const buttons = people.map(person => {
@@ -2669,6 +2716,7 @@
           dot.className = "demo-person-dot";
           dot.setAttribute("aria-hidden", "true");
           const name = document.createElement("span");
+          name.className = "demo-person-name";
           name.textContent = person.name;
           button.append(dot, name);
           frame.append(button);
@@ -2682,8 +2730,8 @@
           return { width, height, viewport, viewed: viewedChartBounds(width, height, view, viewport) };
         };
         const pointFor = (person, viewed) => ({
-          x: viewed.left + person.x / 100 * (viewed.right - viewed.left),
-          y: viewed.bottom - person.y / 100 * (viewed.bottom - viewed.top)
+          x: viewed.left + person.values[xTrait] / 100 * (viewed.right - viewed.left),
+          y: viewed.bottom - person.values[yTrait] / 100 * (viewed.bottom - viewed.top)
         });
         const eventPoint = event => {
           const rect = frame.getBoundingClientRect();
@@ -2695,11 +2743,23 @@
           if (!width || !height) return;
           frame.style.setProperty("--demo-axis-x", `${Math.max(20, Math.min(width - 20, (viewed.left + viewed.right) / 2))}px`);
           frame.style.setProperty("--demo-axis-y", `${Math.max(20, Math.min(height - 20, (viewed.top + viewed.bottom) / 2))}px`);
+          const xAxis = traits.find(trait => trait.id === xTrait);
+          const yAxis = traits.find(trait => trait.id === yTrait);
+          frame.querySelector(".demo-x-low").textContent = xAxis.opposite || "Low";
+          frame.querySelector(".demo-x-high").textContent = xAxis.name;
+          frame.querySelector(".demo-y-low").textContent = yAxis.opposite || "Low";
+          frame.querySelector(".demo-y-high").textContent = yAxis.name;
           people.forEach((person, index) => {
             const point = displayedChartPoint(pointFor(person, viewed), viewport);
-            buttons[index].style.left = `${point.x}px`;
-            buttons[index].style.top = `${point.y}px`;
-            buttons[index].classList.toggle("label-left", point.x > width - 90);
+            const button = buttons[index];
+            const color = relationshipColors.checked ? relationshipColor(person) : person.color;
+            button.hidden = relationshipFilters.some(filter => !filter.checked && filter.dataset.demoRelationship === person.relationship);
+            button.style.left = `${point.x}px`;
+            button.style.top = `${point.y}px`;
+            button.style.color = relationshipColors.checked ? color : "#000";
+            button.style.setProperty("--person-color", color);
+            button.querySelector(".demo-person-name").hidden = !showNames.checked;
+            button.classList.toggle("label-left", point.x > width - 90);
           });
           reset.hidden = view.zoom === 1;
         }
@@ -2743,8 +2803,8 @@
             drag.y = point.y;
           } else {
             const person = people[drag.index];
-            person.x = clamp((point.x - drag.offsetX - viewed.left) / (viewed.right - viewed.left) * 100);
-            person.y = clamp((viewed.bottom - point.y + drag.offsetY) / (viewed.bottom - viewed.top) * 100);
+            person.values[xTrait] = clamp((point.x - drag.offsetX - viewed.left) / (viewed.right - viewed.left) * 100);
+            person.values[yTrait] = clamp((viewed.bottom - point.y + drag.offsetY) / (viewed.bottom - viewed.top) * 100);
           }
           draw();
         });
@@ -2769,13 +2829,42 @@
             const index = buttons.indexOf(event.target);
             if (index < 0) return;
             const person = people[index];
-            person[direction[0]] = clamp(person[direction[0]] + direction[1]);
+            const trait = direction[0] === "x" ? xTrait : yTrait;
+            person.values[trait] = clamp(person.values[trait] + direction[1]);
           }
           event.preventDefault();
           draw();
         });
         reset.addEventListener("click", () => {
           view = { zoom: 1, x: 0.5, y: 0.5 };
+          draw();
+        });
+        const closeOptions = (restoreFocus = false) => {
+          if (optionsMenu.hidden) return;
+          optionsMenu.hidden = true;
+          optionsToggle.setAttribute("aria-expanded", "false");
+          if (restoreFocus) optionsToggle.focus();
+        };
+        optionsToggle.addEventListener("click", () => {
+          if (!optionsMenu.hidden) return closeOptions();
+          optionsMenu.hidden = false;
+          optionsToggle.setAttribute("aria-expanded", "true");
+        });
+        optionsToggle.parentElement.addEventListener("keydown", event => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeOptions(true);
+          }
+        });
+        optionsToggle.parentElement.addEventListener("focusout", event => {
+          if (!optionsToggle.parentElement.contains(event.relatedTarget)) closeOptions();
+        });
+        document.addEventListener("pointerdown", event => {
+          if (!optionsToggle.parentElement.contains(event.target)) closeOptions();
+        });
+        for (const input of [relationshipColors, showNames, ...relationshipFilters]) input.addEventListener("change", draw);
+        document.getElementById("demo-shuffle").addEventListener("click", () => {
+          [xTrait, yTrait] = shuffledTraitPair(traits, xTrait, yTrait);
           draw();
         });
         new ResizeObserver(draw).observe(frame);
@@ -3986,19 +4075,7 @@
       }
 
       el.shuffleAxes.addEventListener("click", () => {
-        const traits = state.traits;
-        const count = traits.length;
-        const currentX = traits.findIndex(trait => trait.id === state.xTrait);
-        const currentY = traits.findIndex(trait => trait.id === state.yTrait);
-        const currentPair = currentX >= 0 && currentY >= 0 && currentX !== currentY
-          ? currentX * (count - 1) + currentY - Number(currentY > currentX) : -1;
-        let pair = Math.floor(Math.random() * (count * (count - 1) - Number(currentPair !== -1)));
-        if (currentPair !== -1 && pair >= currentPair) pair++;
-        const x = Math.floor(pair / (count - 1));
-        let y = pair % (count - 1);
-        if (y >= x) y++;
-        state.xTrait = traits[x].id;
-        state.yTrait = traits[y].id;
+        [state.xTrait, state.yTrait] = shuffledTraitPair(state.traits, state.xTrait, state.yTrait);
         renderAxes();
         drawChart();
         scheduleSave();
@@ -4285,7 +4362,7 @@
 
       function alignGraphColumn() {
         const chartSpace = document.querySelector(".chart-space");
-        const footer = document.querySelector(".chart-footer");
+        const footer = document.querySelector("#workspace .chart-footer");
         const height = chartSpace.getBoundingClientRect().height;
         if (height > 0) {
           const footerSpace = footer.getBoundingClientRect().height + parseFloat(getComputedStyle(footer).marginTop);
@@ -4304,7 +4381,7 @@
         drawChart();
         alignPeopleList();
       });
-      for (const element of [el.chart.parentElement, document.querySelector(".chart-space"), document.querySelector(".chart-footer"), document.querySelector(".chart-heading"),
+      for (const element of [el.chart.parentElement, document.querySelector(".chart-space"), document.querySelector("#workspace .chart-footer"), document.querySelector(".chart-heading"),
                              document.querySelector(".people-heading"), el.addPersonForm]) {
         layoutObserver.observe(element);
       }

@@ -4,7 +4,7 @@ A no-build HTML/CSS/JavaScript app for rating people on adjustable traits and co
 
 The hosted app is available at [joecorsi.github.io/thepear/](https://joecorsi.github.io/thepear/).
 
-The sign-in page includes a sample graph. Drag a sample person, scroll to zoom, or drag empty space to pan; use the arrow keys to move a focused person and Shift-arrow keys to pan when zoomed. Sample changes are not saved or added to an account.
+The sign-in page includes a sample graph with Me and sample people. Drag a person, scroll to zoom, or drag empty space to pan; use the arrow keys to move a focused person and Shift-arrow keys to pan when zoomed. **Options** changes sample visibility, names, and relationship colors, and **Shuffle axes** changes the sample traits. Sample changes are not saved or added to an account.
 
 A retro loading indicator fills in steps as your profile and graphs load, then disappears when loading finishes or fails.
 
