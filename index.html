@@ -384,6 +384,8 @@
                           <label><input type="checkbox" data-graph-relationship="lover"> Lover</label>
                         </span>
                       </span>
+                      <button id="undo" type="button" disabled title="Undo (Cmd/Ctrl+Z)">Undo</button>
+                      <button id="redo" type="button" disabled title="Redo (Shift+Cmd/Ctrl+Z)">Redo</button>
                       <button id="shuffle-axes" type="button" title="Randomly choose two different traits">Shuffle axes</button>
                       <button id="reset-zoom" type="button" hidden>Reset view</button>
                     </span>
@@ -698,6 +700,8 @@
         graphFooterControls: document.querySelector(".graph-footer-controls"),
         graphOptionsToggle: document.getElementById("graph-options-toggle"),
         graphOptionsMenu: document.getElementById("graph-options-menu"),
+        undo: document.getElementById("undo"),
+        redo: document.getElementById("redo"),
         shuffleAxes: document.getElementById("shuffle-axes"),
         relationshipColors: document.getElementById("relationship-colors"),
         showNames: document.getElementById("show-names"),
@@ -743,6 +747,12 @@
       let meSavedVersion = 0;
       let saveQueue = Promise.resolve();
       let saveVersion = 0;
+      const graphHistories = new Map();
+      let meHistory = null;
+      let historySequence = 0;
+      let historyGesture = null;
+      let historyTextEdit = null;
+      let historyInput = null;
       let authNoticeTimer = null;
       let appNoticeTimer = null;
       let chartDrag = null;
@@ -1237,6 +1247,8 @@
         stopNameFocusRing();
         if (el.deletePersonDialog.open) el.deletePersonDialog.close();
         if (currentUser?.id !== nextUser?.id) {
+          graphHistories.clear();
+          meHistory = null;
           activeGraphLoads.clear();
           clearTimeout(meSaveTimer);
           meSaveTimer = null;
@@ -1366,6 +1378,7 @@
         el.chart.setAttribute("aria-label", "Scatter plot of people by selected traits. Select a person, then use arrow keys to adjust.");
         chartLabelHits = [];
         state = normalizeState(graph.data);
+        initializeHistory();
         renderGraphList();
         render();
       }
@@ -1449,12 +1462,13 @@
         }
       }
 
-      function schedulePersonSave(person) {
+      function schedulePersonSave(person, record = true) {
         if (person !== mePerson) {
-          scheduleSave();
+          scheduleSave(record);
           return;
         }
         if (!currentUser) return;
+        if (record) recordHistory("me");
         meSaveVersion += 1;
         pendingMeSave = { me: true, userId: currentUser.id, data: JSON.parse(JSON.stringify(person)), version: meSaveVersion };
         setSaveStatus("Saving...", { inProgress: true });
@@ -1472,8 +1486,9 @@
         }, 500);
       }
 
-      function scheduleSave() {
+      function scheduleSave(record = true) {
         if (!currentUser || !activeGraphId) return;
+        if (record) recordHistory("graph");
         saveVersion += 1;
         pendingSave = {
           id: activeGraphId,
@@ -1496,6 +1511,144 @@
           });
         }, 500);
       }
+
+      const copyHistoryValue = value => JSON.parse(JSON.stringify(value));
+      const sameHistoryValue = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+      function currentHistoryValue(kind) {
+        return kind === "me" ? copyHistoryValue(mePerson) :
+          { name: activeGraphName, data: copyHistoryValue(state) };
+      }
+
+      function initializeHistory() {
+        const graphValue = currentHistoryValue("graph");
+        const previous = graphHistories.get(activeGraphId);
+        if (!previous || !sameHistoryValue(previous.current, graphValue)) {
+          graphHistories.set(activeGraphId, { current: graphValue, past: [], future: [] });
+        }
+        if (mePerson && !meHistory) {
+          meHistory = { current: currentHistoryValue("me"), past: [], future: [] };
+        }
+        updateHistoryButtons();
+      }
+
+      function historyEditGroup() {
+        if (chartDrag && !chartDrag.pan) return chartDrag;
+        if (historyInput?.target === historyTextEdit?.target) return historyTextEdit;
+        if (historyInput?.target === historyGesture?.target) return historyGesture;
+        return null;
+      }
+
+      function recordHistory(kind) {
+        const history = kind === "me" ? meHistory : graphHistories.get(activeGraphId);
+        if (!history) throw new Error("Undo history is not initialized.");
+        const value = currentHistoryValue(kind);
+        if (sameHistoryValue(history.current, value)) return;
+        const group = historyEditGroup();
+        const last = history.past[history.past.length - 1];
+        const canMerge = group && last?.group === group && last.sequence === historySequence;
+        graphHistories.get(activeGraphId).future.length = 0;
+        if (meHistory) meHistory.future.length = 0;
+        if (canMerge) {
+          last.after = value;
+          if (sameHistoryValue(last.before, value)) history.past.pop();
+        } else {
+          history.past.push({ before: history.current, after: value, group, sequence: ++historySequence });
+          if (history.past.length > 100) history.past.shift();
+        }
+        history.current = value;
+        updateHistoryButtons();
+      }
+
+      function historyCandidate(direction) {
+        const graph = graphHistories.get(activeGraphId);
+        const candidates = [[graph, "graph"], [meHistory, "me"]].filter(([history]) => history?.[direction].length);
+        const order = direction === "past" ? "sequence" : "redoSequence";
+        candidates.sort((a, b) => b[0][direction].at(-1)[order] - a[0][direction].at(-1)[order]);
+        return candidates[0];
+      }
+
+      function updateHistoryButtons() {
+        el.undo.disabled = !historyCandidate("past");
+        el.redo.disabled = !historyCandidate("future");
+      }
+
+      function applyHistory(redo) {
+        if (!state || !currentUser || chartDrag || document.querySelector("dialog[open]")) return;
+        const direction = redo ? "future" : "past";
+        const candidate = historyCandidate(direction);
+        if (!candidate) return;
+        const [history, kind] = candidate;
+        const entry = history[direction].pop();
+        if (redo) {
+          entry.sequence = ++historySequence;
+          history.past.push(entry);
+        } else {
+          entry.redoSequence = ++historySequence;
+          history.future.push(entry);
+        }
+        const value = copyHistoryValue(redo ? entry.after : entry.before);
+        history.current = value;
+        historyTextEdit = null;
+        historyGesture = null;
+        closeChartGroup();
+        hoveredPersonId = null;
+        focusedNamePersonId = null;
+        foregroundPersonId = null;
+        selectedPersonId = null;
+        stopNameFocusRing();
+        if (kind === "me") {
+          mePerson = copyHistoryValue(value);
+          schedulePersonSave(mePerson, false);
+        } else {
+          state = copyHistoryValue(value.data);
+          activeGraphName = value.name;
+          const graph = graphs.find(item => item.id === activeGraphId);
+          if (graph) graph.name = activeGraphName;
+          renderGraphList();
+          scheduleSave(false);
+        }
+        render();
+        updateHistoryButtons();
+      }
+
+      document.addEventListener("focusin", event => {
+        const target = event.target;
+        historyTextEdit = target instanceof HTMLInputElement && ["text", "number", "search"].includes(target.type)
+          ? { target } : null;
+      }, true);
+      document.addEventListener("input", event => {
+        historyInput = event;
+        queueMicrotask(() => { if (historyInput === event) historyInput = null; });
+      }, true);
+      document.addEventListener("pointerdown", event => {
+        if (event.target instanceof HTMLInputElement && event.target.type === "range") {
+          historyGesture = { target: event.target };
+        }
+      }, true);
+      for (const type of ["pointerup", "pointercancel"]) {
+        document.addEventListener(type, () => { historyGesture = null; }, true);
+      }
+      document.addEventListener("keydown", event => {
+        const target = event.target;
+        if (target instanceof HTMLInputElement && target.type === "range" &&
+            ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(event.key)) {
+          if (!historyGesture || historyGesture.target !== target) historyGesture = { target };
+        }
+        if (!(event.metaKey || event.ctrlKey) || event.altKey || event.key.toLowerCase() !== "z" ||
+            target instanceof HTMLTextAreaElement || target.isContentEditable ||
+            (target instanceof HTMLInputElement && ["text", "number", "search", "email", "password"].includes(target.type)) ||
+            document.querySelector("dialog[open]")) return;
+        if (historyCandidate(event.shiftKey ? "future" : "past")) {
+          event.preventDefault();
+          applyHistory(event.shiftKey);
+        }
+      }, true);
+      document.addEventListener("keyup", event => {
+        if (historyGesture?.target === event.target) historyGesture = null;
+      }, true);
+      el.undo.addEventListener("click", () => applyHistory(false));
+      el.redo.addEventListener("click", () => applyHistory(true));
 
       async function flushPendingSave() {
         if (saveTimer) {
@@ -1888,7 +2041,7 @@
             event.preventDefault();
             event.stopPropagation();
             deletePersonTarget = { graphId: activeGraphId, personId: person.id };
-            el.deletePersonMessage.textContent = `Delete "${person.name.trim() || `Person ${personIndex + 1}`}"? This cannot be undone.`;
+            el.deletePersonMessage.textContent = `Delete "${person.name.trim() || `Person ${personIndex + 1}`}"? You can undo this until you reload.`;
             el.deletePersonNotice.classList.remove("visible");
             el.deletePersonDialog.showModal();
           });
@@ -3106,12 +3259,13 @@
         const previousName = activeGraphName;
         try {
           activeGraphName = name;
-          scheduleSave();
+          scheduleSave(false);
           await flushPendingSave();
+          recordHistory("graph");
           el.renameGraphDialog.close();
         } catch (error) {
           activeGraphName = previousName;
-          scheduleSave();
+          scheduleSave(false);
           setSaveStatus(`Save failed: ${error.message}`, { isError: true });
           showNotice(el.renameGraphNotice, `Couldn't rename this graph: ${error.message}`);
         } finally {
@@ -3184,6 +3338,7 @@
           if (error) throw error;
           deleted = true;
           graphs = graphs.filter(graph => graph.id !== deleteTargetId);
+          graphHistories.delete(deleteTargetId);
           activeGraphId = null;
           if (graphs.length) {
             activateGraph(graphs[0]);
@@ -3281,8 +3436,9 @@
         try {
           colorPerson.color = color.toLowerCase();
           markPersonModified(colorPerson);
-          schedulePersonSave(colorPerson);
+          schedulePersonSave(colorPerson, false);
           await flushPendingSave();
+          recordHistory(colorPerson === mePerson ? "me" : "graph");
           colorButton.style.backgroundColor = colorPerson.color;
           drawChart();
           el.colorDialog.close();
@@ -3291,7 +3447,7 @@
           if (previousModifiedAt === undefined) delete colorPerson.modifiedAt;
           else colorPerson.modifiedAt = previousModifiedAt;
           updatePersonModifiedBadge(colorPerson);
-          schedulePersonSave(colorPerson);
+          schedulePersonSave(colorPerson, false);
           setSaveStatus(`Save failed: ${error.message}`, { isError: true });
           showNotice(el.colorNotice, `Couldn't save this color: ${error.message}`);
         } finally {
@@ -3388,13 +3544,14 @@
         el.dimensions.inert = true;
         el.addTraitForm.inert = true;
         try {
-          scheduleSave();
+          scheduleSave(false);
           await flushPendingSave();
+          recordHistory("graph");
           el.traitsDialog.close();
           render();
         } catch (error) {
           state = previousState;
-          scheduleSave();
+          scheduleSave(false);
           setSaveStatus(`Save failed: ${error.message}`, { isError: true });
           showNotice(el.traitsNotice, `Couldn't save traits: ${error.message}`);
         } finally {
