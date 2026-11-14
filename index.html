@@ -2347,12 +2347,15 @@
         zoomChart(chartView.zoom * Math.exp(-delta * 0.0015), pointerPosition(event));
       }, { passive: false });
 
+      el.resetZoom.addEventListener("pointerdown", event => {
+        if (event.isPrimary && event.button === 0) event.preventDefault();
+      });
       el.resetZoom.addEventListener("click", () => {
         if (chartDrag) return;
+        el.chart.focus({ preventScroll: true });
         chartView = { zoom: 1, x: 0.5, y: 0.5 };
         hoveredPersonId = null;
         drawChart();
-        el.chart.focus({ preventScroll: true });
       });
 
       chartFrame.addEventListener("click", event => {
