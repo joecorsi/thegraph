@@ -57,7 +57,11 @@
       .masthead .account-bar { justify-self: end; }
       .privacy-note { display: none; margin: 0; text-align: center; font-size: .85em; }
       .page:has(#workspace:not([hidden])) .privacy-note { display: block; }
-      .auth-panel:not([hidden]) { display: grid; grid-template-columns: minmax(0, 25rem) minmax(0, 360px); align-items: start; gap: 2rem; }
+      .auth-panel:not([hidden]) { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 360px); grid-template-areas: "heading ." "details demo"; align-items: start; column-gap: 2rem; }
+      .auth-copy { display: contents; }
+      #auth-title { grid-area: heading; margin-bottom: 0; }
+      .auth-details { grid-area: details; min-width: 0; }
+      .demo { grid-area: demo; }
       .auth-form { display: grid; gap: .5em; max-width: 30em; margin: 1em 0; }
       #sign-in-form { width: 100%; max-width: 100%; }
       #auth-email { min-width: 0; }
@@ -82,7 +86,6 @@
       .demo-person.label-left { flex-direction: row-reverse; transform: translate(calc(-100% + 6px), -50%); }
       .demo-person:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
       .demo-person-dot { box-sizing: border-box; flex: none; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: var(--person-color); }
-      .demo-help { margin: .5em 0; }
       .layout { --layout-gap: calc(1em + 5px); display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, min(calc(100% - min(40%, 21rem) - var(--layout-gap)), var(--chart-available-width, 100%))) min(40%, 21rem); grid-template-rows: minmax(0, 1fr); justify-content: center; gap: var(--layout-gap); }
       .graph-select { position: relative; flex: 1 1 90px; min-width: 90px; }
       .graph-dates { display: flex; flex-wrap: wrap; gap: var(--control-gap); }
@@ -315,7 +318,8 @@
         .layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
       }
       @media (max-width: 680px) {
-        .auth-panel:not([hidden]) { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+        .auth-panel:not([hidden]) { grid-template-columns: minmax(0, max-content); grid-template-areas: "heading" "details" "demo"; }
+        .demo { margin-top: 1rem; }
       }
       @media (max-width: 650px) {
         .page:has(#workspace:not([hidden])) .masthead { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -362,26 +366,28 @@
         <section class="panel auth-panel" id="auth-screen" aria-labelledby="auth-title">
           <div class="auth-copy">
             <h1 id="auth-title">Welcome to The Pear!</h1>
-            <p class="muted">Sign in to keep your graphs private<br>and available on your other devices.</p>
-            <form class="auth-form" id="sign-in-form">
-              <label class="field-label" for="auth-email">Your email address</label>
-              <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required>
-              <div class="auth-actions">
-                <button class="button button-pink" id="email-sign-in" type="submit">Email me a sign-in link</button>
-                <button class="button" id="google-sign-in" type="button">Sign in with Google</button>
-              </div>
-            </form>
-            <details class="setup-details" id="connection-details" hidden>
-              <summary id="connection-summary">Set up Supabase connection</summary>
-              <form class="auth-form" id="connection-form">
-                <label class="field-label" for="project-url">Supabase project URL</label>
-                <input id="project-url" type="url" placeholder="https://your-project.supabase.co" required>
-                <label class="field-label" for="public-key">Supabase publishable key</label>
-                <input id="public-key" type="password" autocomplete="off" placeholder="sb_publishable_..." required>
-                <button class="button" type="submit">Save connection</button>
+            <div class="auth-details">
+              <p class="muted">Sign in to keep your graphs private<br>and available on your other devices.</p>
+              <form class="auth-form" id="sign-in-form">
+                <label class="field-label" for="auth-email">Your email address</label>
+                <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+                <div class="auth-actions">
+                  <button class="button button-pink" id="email-sign-in" type="submit">Email me a sign-in link</button>
+                  <button class="button" id="google-sign-in" type="button">Sign in with Google</button>
+                </div>
               </form>
-            </details>
-            <div class="notice" id="auth-notice" role="status" aria-live="polite"></div>
+              <details class="setup-details" id="connection-details" hidden>
+                <summary id="connection-summary">Set up Supabase connection</summary>
+                <form class="auth-form" id="connection-form">
+                  <label class="field-label" for="project-url">Supabase project URL</label>
+                  <input id="project-url" type="url" placeholder="https://your-project.supabase.co" required>
+                  <label class="field-label" for="public-key">Supabase publishable key</label>
+                  <input id="public-key" type="password" autocomplete="off" placeholder="sb_publishable_..." required>
+                  <button class="button" type="submit">Save connection</button>
+                </form>
+              </details>
+              <div class="notice" id="auth-notice" role="status" aria-live="polite"></div>
+            </div>
           </div>
           <div class="demo">
             <div class="demo-graph" id="demo-graph" role="group" aria-label="Interactive sample graph" aria-describedby="demo-help">
@@ -392,7 +398,7 @@
               <span class="demo-axis-label demo-y-low">Benevolent</span>
               <span class="demo-axis-label demo-y-high">Malevolent</span>
             </div>
-            <p class="demo-help" id="demo-help">Drag a person, scroll to zoom, or drag empty space to pan.</p>
+            <p class="visually-hidden" id="demo-help">Drag a person, scroll to zoom, or drag empty space to pan.</p>
             <button type="button" id="demo-reset" hidden>Reset view</button>
           </div>
         </section>
