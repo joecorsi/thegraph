@@ -96,12 +96,12 @@
       #chart { display: block; width: 100%; aspect-ratio: 1; border-radius: inherit; touch-action: none; }
       #chart:focus { outline: none; }
       .chart-groups { position: absolute; inset: 0; pointer-events: none; }
-      .chart-group-button { position: absolute; display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: #fff; color: #000; font: bold 12px/16px serif; white-space: nowrap; cursor: pointer; pointer-events: auto; }
+      .chart-group-button { position: absolute; display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #000; font: bold 12px/16px serif; white-space: nowrap; cursor: pointer; pointer-events: auto; }
       .chart-group-button.group-label-left { flex-direction: row-reverse; }
       .chart-group-button.group-selected { background: transparent; pointer-events: none; }
       .chart-group-button.group-selected .chart-group-dot { visibility: hidden; }
       .chart-group-button.group-selected .chart-group-count { background: #fff; pointer-events: auto; }
-      .chart-group-dot { box-sizing: border-box; flex: none; width: 12px; height: 12px; border: 1px solid #fff; border-radius: 50%; background: currentColor; }
+      .chart-group-dot { box-sizing: border-box; flex: none; width: 12px; height: 12px; border: 1px solid #fff; border-radius: 50%; background: linear-gradient(currentColor, currentColor), #fff; }
       .chart-group-count { position: relative; background: #fff; }
       .chart-group-popover { position: absolute; z-index: 5; box-sizing: border-box; width: max-content; min-width: 150px; max-width: min(250px, 100%); max-height: min(240px, 100%); overflow-y: auto; padding: var(--control-gap); border: 1px solid #767676; border-radius: 2px; background: #fff; color: #000; font: 13.3333px Arial, sans-serif; }
       .chart-group-popover button { display: block; width: 100%; padding: 4px; border: 0; background: #fff; color: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
