@@ -82,6 +82,20 @@
       .loading-progress { display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 2px; padding: 2px; border: 2px inset #ddd; background: #fff; }
       .loading-progress span { aspect-ratio: 1; }
       .loading-progress span.filled { background: #000080; }
+      #tutorial-dialog { position: fixed; box-sizing: border-box; width: min(320px, calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 24px); margin: 0; overflow: visible; padding: 3px; border: 2px outset #ddd; border-radius: 0; background: #c0c0c0; color: #000; box-shadow: 2px 2px 0 #333; font: 13px Arial, sans-serif; }
+      #tutorial-dialog::backdrop { background: rgba(0, 0, 0, .3); }
+      .tutorial-spotlight { position: fixed; outline: 2px dashed #000080; outline-offset: 3px; pointer-events: none; }
+      .tutorial-window { position: relative; max-height: calc(100dvh - 34px); overflow-y: auto; }
+      .tutorial-titlebar { padding: 3px 5px; background: #000080; color: #fff; font-weight: bold; }
+      .tutorial-body { padding: 12px 10px 10px; }
+      .tutorial-body h2 { margin: 0 0 .5em; font-size: 15px; }
+      .tutorial-body p { margin: 0 0 1em; }
+      .tutorial-progress { display: flex; gap: 2px; padding: 2px; border: 2px inset #ddd; background: #fff; }
+      .tutorial-progress span { flex: 1; height: 8px; }
+      .tutorial-progress span.filled { background: #000080; }
+      .tutorial-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--control-gap); margin-top: 12px; }
+      .tutorial-actions button:first-child { margin-right: auto; }
+      .tutorial-error { margin-top: 8px; color: #a00; }
       .graph-toggle, .axis-toggle, .relationship-toggle { position: relative; display: flex; width: 100%; padding-right: 24px; text-align: left; }
       .graph-toggle { padding-left: 2px; }
       .graph-toggle span, .axis-toggle span, .relationship-toggle span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -307,6 +321,7 @@
         <p class="privacy-note">Your graphs are private to your account</p>
         <div class="account-bar" id="account-bar" hidden>
           <span class="graph-badge account-email" id="account-email"></span>
+          <button class="button" id="open-tutorial" type="button" aria-label="Replay tutorial" title="Replay tutorial">Help</button>
           <button class="button" id="sign-out" type="button">Sign out</button>
         </div>
       </header>
@@ -555,6 +570,29 @@
       </div>
     </main>
 
+    <dialog id="tutorial-dialog" aria-labelledby="tutorial-heading" aria-describedby="tutorial-description">
+      <div class="tutorial-spotlight" id="tutorial-spotlight" aria-hidden="true"></div>
+      <div class="tutorial-window">
+        <div class="tutorial-titlebar">The Pear - Getting Started</div>
+        <div class="tutorial-body">
+          <div aria-live="polite" aria-atomic="true">
+            <h2 id="tutorial-heading"></h2>
+            <p id="tutorial-description"></p>
+            <p id="tutorial-step"></p>
+          </div>
+          <div class="tutorial-progress" role="progressbar" aria-label="Tutorial progress" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div id="tutorial-error" class="tutorial-error" role="alert" hidden></div>
+          <div class="tutorial-actions">
+            <button id="tutorial-skip" type="button">Skip</button>
+            <button id="tutorial-back" type="button">Back</button>
+            <button id="tutorial-next" type="button" autofocus>Next</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
     <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" hidden>
       <div class="loading-window">
         <div class="loading-title">The Pear</div>
@@ -638,6 +676,17 @@
         publicKey: document.getElementById("public-key"),
         accountBar: document.getElementById("account-bar"),
         accountEmail: document.getElementById("account-email"),
+        openTutorial: document.getElementById("open-tutorial"),
+        tutorialDialog: document.getElementById("tutorial-dialog"),
+        tutorialSpotlight: document.getElementById("tutorial-spotlight"),
+        tutorialHeading: document.getElementById("tutorial-heading"),
+        tutorialDescription: document.getElementById("tutorial-description"),
+        tutorialStep: document.getElementById("tutorial-step"),
+        tutorialProgress: document.querySelector(".tutorial-progress"),
+        tutorialError: document.getElementById("tutorial-error"),
+        tutorialSkip: document.getElementById("tutorial-skip"),
+        tutorialBack: document.getElementById("tutorial-back"),
+        tutorialNext: document.getElementById("tutorial-next"),
         signOut: document.getElementById("sign-out"),
         workspace: document.getElementById("workspace"),
         graphToggle: document.getElementById("graph-toggle"),
@@ -736,6 +785,10 @@
 
       let client = null;
       let currentUser = null;
+      let tutorialIndex = 0;
+      let tutorialSaving = false;
+      let tutorialSaveFailed = false;
+      let tutorialSession = 0;
       let mePerson = null;
       const activeGraphLoads = new Set();
       let graphs = [];
@@ -1172,6 +1225,163 @@
         showNotice(el.workspace.hidden ? el.authNotice : el.appNotice, error.message);
       }
 
+      const tutorialSteps = [
+        {
+          title: "Add a person",
+          description: "Enter a name and choose an optional relationship, age, or color. Select Add to put the person on your graph.",
+          target: () => el.addPersonForm
+        },
+        {
+          title: "Adjust their traits",
+          description: "Expand a person's row to see their trait sliders. Move a slider to change that person's score.",
+          target: () => el.peopleScroll
+        },
+        {
+          title: "Investigate the graph",
+          description: "Each dot represents a person. Drag a dot to adjust its scores, or scroll to zoom and drag empty space to pan. Changes save automatically.",
+          target: () => el.chart
+        },
+        {
+          title: "Change axes",
+          description: "Select a label at either end of an axis to choose which trait or age the graph compares.",
+          target: () => {
+            const axis = el.xAxes[1].parentElement;
+            return getComputedStyle(axis).visibility === "hidden" ? el.chart : axis;
+          }
+        },
+        {
+          title: "Add custom traits",
+          description: "Choose Traits to add your own low and high ends, then save. Your new traits are available in the sliders and axis menus.",
+          target: () => el.openTraits
+        }
+      ];
+
+      async function saveTutorialStatus(status) {
+        const userId = currentUser.id;
+        const { data, error } = await client.auth.updateUser({ data: { thepear_tutorial: status } });
+        if (error) throw error;
+        if (!data.user || data.user.id !== userId) throw new Error("The updated account could not be verified.");
+        if (currentUser?.id === userId) currentUser = data.user;
+      }
+
+      function positionTutorial() {
+        if (!el.tutorialDialog.open) return;
+        const target = tutorialSteps[tutorialIndex].target().getBoundingClientRect();
+        const spotlight = el.tutorialSpotlight;
+        const left = Math.max(0, target.left);
+        const top = Math.max(0, target.top);
+        const right = Math.min(window.innerWidth, target.right);
+        const bottom = Math.min(window.innerHeight, target.bottom);
+        spotlight.hidden = right <= left || bottom <= top;
+        if (!spotlight.hidden) {
+          Object.assign(spotlight.style, {
+            left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${bottom - top}px`
+          });
+        }
+        const windowRect = el.tutorialDialog.getBoundingClientRect();
+        const gap = 12;
+        const clamp = (value, max) => Math.max(gap, Math.min(value, Math.max(gap, max - gap)));
+        const positions = [
+          [target.left, target.bottom + gap],
+          [target.left, target.top - windowRect.height - gap],
+          [target.right + gap, target.top],
+          [target.left - windowRect.width - gap, target.top]
+        ].map(([x, y]) => [
+          clamp(x, window.innerWidth - windowRect.width),
+          clamp(y, window.innerHeight - windowRect.height)
+        ]);
+        const overlap = ([x, y]) =>
+          Math.max(0, Math.min(x + windowRect.width, target.right) - Math.max(x, target.left)) *
+          Math.max(0, Math.min(y + windowRect.height, target.bottom) - Math.max(y, target.top));
+        positions.sort((a, b) => overlap(a) - overlap(b));
+        el.tutorialDialog.style.left = `${positions[0][0]}px`;
+        el.tutorialDialog.style.top = `${positions[0][1]}px`;
+      }
+
+      function renderTutorial() {
+        const step = tutorialSteps[tutorialIndex];
+        el.tutorialHeading.textContent = step.title;
+        el.tutorialDescription.textContent = step.description;
+        el.tutorialStep.textContent = `Step ${tutorialIndex + 1} of ${tutorialSteps.length}`;
+        el.tutorialProgress.setAttribute("aria-valuenow", tutorialIndex + 1);
+        [...el.tutorialProgress.children].forEach((segment, index) => {
+          segment.classList.toggle("filled", index <= tutorialIndex);
+        });
+        el.tutorialBack.disabled = tutorialIndex === 0;
+        el.tutorialNext.textContent = tutorialIndex === tutorialSteps.length - 1 ? "Finish" : "Next";
+        positionTutorial();
+      }
+
+      function startTutorial(error = "") {
+        if (el.tutorialDialog.open) return;
+        tutorialSession += 1;
+        tutorialSaving = false;
+        tutorialIndex = 0;
+        tutorialSaveFailed = false;
+        el.tutorialSkip.textContent = "Skip";
+        el.tutorialError.textContent = error;
+        el.tutorialError.hidden = !error;
+        el.tutorialDialog.showModal();
+        renderTutorial();
+        el.tutorialNext.focus();
+      }
+
+      async function finishTutorial() {
+        if (tutorialSaving) return;
+        const session = tutorialSession;
+        const userId = currentUser.id;
+        tutorialSaving = true;
+        for (const button of [el.tutorialSkip, el.tutorialBack, el.tutorialNext]) button.disabled = true;
+        el.tutorialError.hidden = true;
+        try {
+          if (currentUser.user_metadata?.thepear_tutorial !== "done") await saveTutorialStatus("done");
+          if (tutorialSession === session && currentUser?.id === userId && el.tutorialDialog.open) {
+            el.tutorialDialog.close();
+          }
+        } catch (error) {
+          if (tutorialSession === session && currentUser?.id === userId) {
+            tutorialSaveFailed = true;
+            el.tutorialSkip.textContent = "Close";
+            el.tutorialError.textContent = `Couldn't save tutorial progress: ${error.message}. Retry, or close without saving.`;
+            el.tutorialError.hidden = false;
+          }
+        } finally {
+          if (tutorialSession === session) {
+            tutorialSaving = false;
+            el.tutorialSkip.disabled = false;
+            el.tutorialNext.disabled = false;
+            el.tutorialBack.disabled = tutorialIndex === 0;
+            if (tutorialSaveFailed && el.tutorialDialog.open) el.tutorialNext.focus();
+          }
+        }
+      }
+
+      function skipTutorial() {
+        if (tutorialSaveFailed && !tutorialSaving) el.tutorialDialog.close();
+        else void finishTutorial();
+      }
+
+      el.openTutorial.addEventListener("click", () => startTutorial());
+      el.tutorialSkip.addEventListener("click", skipTutorial);
+      el.tutorialBack.addEventListener("click", () => {
+        if (tutorialIndex > 0) tutorialIndex -= 1;
+        renderTutorial();
+        if (el.tutorialBack.disabled) el.tutorialNext.focus();
+      });
+      el.tutorialNext.addEventListener("click", () => {
+        if (tutorialIndex === tutorialSteps.length - 1) void finishTutorial();
+        else {
+          tutorialIndex += 1;
+          renderTutorial();
+        }
+      });
+      el.tutorialDialog.addEventListener("cancel", event => {
+        event.preventDefault();
+        skipTutorial();
+      });
+      window.addEventListener("resize", positionTutorial);
+      document.addEventListener("scroll", positionTutorial, true);
+
       function setSaveStatus(message, { isError = false, inProgress = false } = {}) {
         el.statusMessage.textContent = message;
         el.saveStatus.classList.toggle("error", isError);
@@ -1249,6 +1459,13 @@
         stopNameFocusRing();
         if (el.deletePersonDialog.open) el.deletePersonDialog.close();
         if (currentUser?.id !== nextUser?.id) {
+          if (el.tutorialDialog.open) {
+            el.tutorialDialog.close();
+            tutorialSession += 1;
+            tutorialSaving = false;
+            el.tutorialSkip.disabled = false;
+            el.tutorialNext.disabled = false;
+          }
           graphHistories.clear();
           meHistory = null;
           activeGraphLoads.clear();
@@ -1285,7 +1502,7 @@
         graphs = [];
         activeGraphId = null;
         state = null;
-        const load = { progress: 0 };
+        const load = { progress: 0, userId: currentUser.id };
         activeGraphLoads.add(load);
         updateLoadingProgress();
         el.loadingOverlay.hidden = false;
@@ -1300,6 +1517,16 @@
           updateLoadingProgress();
           el.workspace.hidden = false;
           drawChart();
+          const tutorialStatus = currentUser.user_metadata?.thepear_tutorial;
+          load.startTutorial = tutorialStatus === "pending" || (load.newAccount && !tutorialStatus);
+          if (load.newAccount && !tutorialStatus) {
+            try {
+              await saveTutorialStatus("pending");
+            } catch (error) {
+              load.tutorialError = `Couldn't save tutorial progress: ${error.message}. You can try again when you finish.`;
+            }
+            if (!activeGraphLoads.has(load)) return;
+          }
           if (unsavedMe) showNotice(el.appNotice, "Your Me changes may not have been saved before the account changed.");
           load.progress = 100;
           updateLoadingProgress();
@@ -1313,6 +1540,9 @@
           if (activeGraphLoads.delete(load)) {
             if (activeGraphLoads.size === 0) el.loadingOverlay.hidden = true;
             else updateLoadingProgress();
+            if (load.startTutorial && currentUser?.id === load.userId && !el.workspace.hidden) {
+              startTutorial(load.tutorialError);
+            }
           }
         }
       }
@@ -1349,6 +1579,7 @@
         load.progress = 50;
         updateLoadingProgress();
         if (graphs.length === 0) {
+          load.newAccount = true;
           await createGraph("My first graph", false, false, load);
           return;
         }
