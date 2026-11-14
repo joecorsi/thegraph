@@ -57,10 +57,10 @@
       .masthead .account-bar { justify-self: end; }
       .privacy-note { display: none; margin: 0; text-align: center; font-size: .85em; }
       .page:has(#workspace:not([hidden])) .privacy-note { display: block; }
-      .auth-panel:not([hidden]) { display: grid; width: fit-content; max-width: 100%; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); grid-template-rows: auto auto; align-items: start; column-gap: 2rem; }
-      .auth-copy { display: grid; grid-column: 1; grid-row: 1 / span 2; grid-template-rows: subgrid; width: fit-content; max-width: 100%; align-self: stretch; }
-      #auth-title { margin-bottom: 0; }
-      .auth-details { width: 0; min-width: 100%; }
+      .auth-panel:not([hidden]) { display: grid; width: fit-content; max-width: 100%; grid-template-columns: minmax(0, 300px) minmax(0, 600px); grid-template-rows: auto auto; align-items: start; column-gap: 2rem; }
+      .auth-copy { display: grid; grid-column: 1; grid-row: 1 / span 2; grid-template-rows: subgrid; width: 100%; max-width: 300px; align-self: stretch; }
+      #auth-title { margin-bottom: 0; font-size: 1.9em; }
+      .auth-details { min-width: 0; }
       .auth-details .muted { text-align: justify; }
       .demo { grid-column: 2; grid-row: 2; }
       .auth-form { display: grid; gap: .5em; max-width: 30em; margin: 1em 0; }
@@ -71,7 +71,7 @@
       }
       #sign-in-form .auth-actions { display: grid; }
       .setup-details { margin: 1em 0; }
-      .demo-graph { --demo-axis-x: 50%; --demo-axis-y: 50%; position: relative; box-sizing: border-box; width: min(360px, 100%); aspect-ratio: 1; overflow: hidden; border: 1px solid rgba(0, 0, 0, .15); border-radius: 8px; background: #fff; color: #000; touch-action: none; }
+      .demo-graph { --demo-axis-x: 50%; --demo-axis-y: 50%; position: relative; box-sizing: border-box; width: min(600px, 100%); aspect-ratio: 1; overflow: hidden; border: 1px solid rgba(0, 0, 0, .15); border-radius: 8px; background: #fff; color: #000; touch-action: none; }
       .demo-graph:focus-within { border-color: #000; }
       .demo-axis-line { position: absolute; pointer-events: none; }
       .demo-axis-horizontal { left: 20px; right: 20px; top: var(--demo-axis-y); border-top: 1px solid #000; }
@@ -368,7 +368,7 @@
           <div class="auth-copy">
             <h1 id="auth-title">Welcome to The Pear!</h1>
             <div class="auth-details">
-              <p class="muted">Sign in to keep your graphs private and available on your other devices.</p>
+              <p class="muted">See your world from a new angle. Your graphs are private and available anywhere.</p>
               <form class="auth-form" id="sign-in-form">
                 <label class="field-label" for="auth-email">Your email address</label>
                 <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required>
