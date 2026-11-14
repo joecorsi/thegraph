@@ -575,7 +575,7 @@
       <div class="tutorial-shade" id="tutorial-shade" aria-hidden="true" hidden></div>
       <div class="tutorial-spotlight" id="tutorial-spotlight" aria-hidden="true"></div>
       <div class="tutorial-window">
-        <div class="tutorial-titlebar"><span>The Pear</span><span>Getting Started</span></div>
+        <div class="tutorial-titlebar"><span><span aria-hidden="true">🍐</span> The Pear</span><span>Getting Started</span></div>
         <div class="tutorial-body">
           <div aria-live="polite" aria-atomic="true">
             <h2 id="tutorial-heading"></h2>
@@ -1234,12 +1234,12 @@
       const tutorialSteps = [
         {
           title: "Add a person",
-          description: "Enter a name and choose an optional relationship, age, or color. Select Add to put the person on your graph.",
+          description: "Enter a name and optional details, then select Add.",
           target: () => el.addPersonForm
         },
         {
           title: "Adjust their traits",
-          description: "Expand a person's row to see their trait sliders, like Me's shown here. Move a slider to change that person's score.",
+          description: "Expand a person and move their sliders to adjust traits.",
           target: () => el.peopleScroll,
           enter: () => {
             const card = el.meRow.querySelector(".person-card");
@@ -1262,12 +1262,12 @@
         },
         {
           title: "Investigate the graph",
-          description: "Each dot represents a person. Drag a dot to adjust its scores, or scroll to zoom and drag empty space to pan. Changes save automatically.",
+          description: "Each dot is a person. Drag dots to adjust scores, scroll to zoom, or drag empty space to pan. Changes save automatically.",
           target: () => el.chart
         },
         {
           title: "Change axes",
-          description: "Select a label at either end of an axis to choose which trait or age the graph compares.",
+          description: "Select an axis label to compare a different trait or age.",
           target: () => {
             const axis = el.xAxes[1].parentElement;
             return getComputedStyle(axis).visibility === "hidden" ? el.chart : axis;
@@ -1275,7 +1275,7 @@
         },
         {
           title: "Explore graph options",
-          description: "Use Options to show or hide names and relationships, or color people by relationship.",
+          description: "Show or hide names and relationships, or color people by relationship.",
           target: () => el.graphOptionsMenu,
           enter: () => {
             openGraphOptions();
@@ -1284,7 +1284,7 @@
         },
         {
           title: "Add custom traits",
-          description: "Choose Traits to add your own low and high ends, then save. Your new traits are available in the sliders and axis menus.",
+          description: "Use Traits to add and save your own low and high ends for sliders and axes.",
           target: () => el.openTraits
         }
       ];
