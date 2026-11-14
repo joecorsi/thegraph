@@ -95,6 +95,17 @@
       .chart-frame:focus-within { border-color: #000; }
       #chart { display: block; width: 100%; aspect-ratio: 1; border-radius: inherit; touch-action: none; }
       #chart:focus { outline: none; }
+      .chart-groups { position: absolute; inset: 0; pointer-events: none; }
+      .chart-group-button { position: absolute; display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: #fff; color: #000; font: bold 12px/16px serif; white-space: nowrap; cursor: pointer; pointer-events: auto; }
+      .chart-group-button.group-label-left { flex-direction: row-reverse; }
+      .chart-group-button.group-selected { background: transparent; pointer-events: none; }
+      .chart-group-button.group-selected .chart-group-dot { visibility: hidden; }
+      .chart-group-button.group-selected .chart-group-count { background: #fff; pointer-events: auto; }
+      .chart-group-dot { box-sizing: border-box; flex: none; width: 12px; height: 12px; border: 1px solid #fff; border-radius: 50%; background: currentColor; }
+      .chart-group-count { position: relative; background: #fff; }
+      .chart-group-popover { position: absolute; z-index: 5; box-sizing: border-box; width: max-content; min-width: 150px; max-width: min(250px, 100%); max-height: min(240px, 100%); overflow-y: auto; padding: var(--control-gap); border: 1px solid #767676; border-radius: 2px; background: #fff; color: #000; font: 13.3333px Arial, sans-serif; }
+      .chart-group-popover button { display: block; width: 100%; padding: 4px; border: 0; background: #fff; color: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+      .chart-group-popover button:hover, .chart-group-popover button:focus-visible { background: #efefef; }
       .chart-label-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
       #chart-labels { display: block; width: 100%; height: 100%; }
       .chart-label-hit { position: absolute; pointer-events: auto; touch-action: none; }
@@ -347,6 +358,7 @@
                     <canvas id="chart" role="img" tabindex="0" aria-label="Scatter plot of people by selected traits. Select a person, then use arrow keys to adjust.">
                       Scatter plot of people by selected traits.
                     </canvas>
+                    <div class="chart-groups"></div>
                     <span class="axis-end axis-x-low"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="x-axis-low"><span></span></button><select id="x-axis-low" aria-label="Horizontal axis trait, left end" size="9" hidden></select></span>
                     <span class="axis-end axis-x-high"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="x-axis-high"><span></span></button><select id="x-axis-high" aria-label="Horizontal axis trait, right end" size="9" hidden></select></span>
                     <span class="axis-end axis-y-low"><button class="axis-toggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="y-axis-low"><span></span></button><select id="y-axis-low" aria-label="Vertical axis trait, bottom end" size="9" hidden></select></span>
@@ -356,6 +368,7 @@
                       <button class="chart-info-button" type="button" aria-label="Graph controls information" aria-describedby="chart-info-tooltip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor"/></svg></button>
                       <span class="chart-info-tooltip" id="chart-info-tooltip" role="tooltip">Scroll to zoom, drag empty space or use Shift and arrow keys to pan. Select a dot, then use the mouse or arrow keys to adjust values.</span>
                     </span>
+                    <div class="chart-group-popover" id="chart-group-popover" role="group" aria-label="People in this group" hidden></div>
                   </div>
                   <div class="chart-footer">
                     <span class="graph-footer-controls">
@@ -676,6 +689,8 @@
         xAxes: [document.getElementById("x-axis-low"), document.getElementById("x-axis-high")],
         yAxes: [document.getElementById("y-axis-low"), document.getElementById("y-axis-high")],
         chart: document.getElementById("chart"),
+        chartGroups: document.querySelector(".chart-groups"),
+        chartGroupPopover: document.getElementById("chart-group-popover"),
         chartInfo: document.querySelector(".chart-info"),
         resetZoom: document.getElementById("reset-zoom"),
         chartLabels: document.getElementById("chart-labels"),
@@ -743,6 +758,10 @@
       const graphOpenedPeople = new Set();
       let peopleFilter = "";
       let chartLabelHits = [];
+      let chartGroups = [];
+      let groupedPersonIds = new Set();
+      const chartGroupButtons = new Map();
+      let openChartGroup = null;
       let creatingGraph = false;
       let deletingGraph = false;
       let deleteTargetId = null;
@@ -2186,6 +2205,7 @@
         const focusedPosition = focused && chartPoint(focused, bounds, range);
         if (isHit(focusedPosition)) return focused;
         for (let i = people.length - 1; i >= 0; i--) {
+          if (groupedPersonIds.has(people[i].id)) continue;
           const position = chartPoint(people[i], bounds, range);
           if (isHit(position)) return people[i];
         }
@@ -2296,7 +2316,8 @@
       const isChartTarget = target => target === el.chart || target.classList.contains("chart-label-hit");
 
       chartFrame.addEventListener("wheel", event => {
-        if (!isChartTarget(event.target) || !state || chartDrag) return;
+        if ((!isChartTarget(event.target) && !event.target.closest(".chart-group-button")) || !state || chartDrag) return;
+        closeChartGroup();
         event.preventDefault();
         const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? el.chart.clientHeight : 1);
         zoomChart(chartView.zoom * Math.exp(-delta * 0.0015), pointerPosition(event));
@@ -2307,6 +2328,7 @@
       });
       el.resetZoom.addEventListener("click", () => {
         if (chartDrag) return;
+        closeChartGroup();
         el.chart.focus({ preventScroll: true });
         chartView = { zoom: 1, x: 0.5, y: 0.5 };
         hoveredPersonId = null;
@@ -2486,6 +2508,198 @@
         el.peopleScroll.scrollTop += card.getBoundingClientRect().top - el.peopleScroll.getBoundingClientRect().top;
       });
 
+      function closeChartGroup(returnFocus = false) {
+        if (!openChartGroup) return;
+        const button = chartGroupButtons.get(openChartGroup.key);
+        if (button) button.setAttribute("aria-expanded", "false");
+        openChartGroup = null;
+        el.chartGroupPopover.hidden = true;
+        el.chartGroupPopover.replaceChildren();
+        if (returnFocus && button) button.focus({ preventScroll: true });
+      }
+
+      function chartGroupMemberLabel(group, member) {
+        const name = member.person.name.trim() || `Person ${member.index + 1}`;
+        const duplicates = group.members.filter(item =>
+          (item.person.name.trim() || `Person ${item.index + 1}`) === name).length;
+        return duplicates > 1 ? `${name} (${member.person.id === ME_ID ? "Me" : `person ${member.index + 1}`})` : name;
+      }
+
+      function openChartGroupList(group, button) {
+        if (openChartGroup?.key === group.key) {
+          closeChartGroup(true);
+          return;
+        }
+        closeChartGroup();
+        openChartGroup = { key: group.key, graphId: activeGraphId };
+        button.setAttribute("aria-expanded", "true");
+        for (const member of group.members) {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.dataset.personId = member.person.id;
+          item.textContent = chartGroupMemberLabel(group, member);
+          item.addEventListener("click", () => {
+            const current = chartGroups.find(entry => entry.key === group.key);
+            const chosen = current?.members.find(entry => entry.person.id === item.dataset.personId);
+            if (!chosen) throw new Error("The selected graph group member is no longer available.");
+            closeChartGroup();
+            foregroundPersonId = chosen.person.id;
+            hoveredPersonId = null;
+            selectChartPerson(chosen.person);
+            el.chart.focus({ preventScroll: true });
+          });
+          el.chartGroupPopover.append(item);
+        }
+        el.chartGroupPopover.hidden = false;
+        const frame = el.chart.getBoundingClientRect();
+        const menu = el.chartGroupPopover.getBoundingClientRect();
+        el.chartGroupPopover.style.left = `${Math.max(0, Math.min(group.point.x + 8, frame.width - menu.width))}px`;
+        el.chartGroupPopover.style.top = `${Math.max(0, Math.min(group.point.y + 8, frame.height - menu.height))}px`;
+        el.chartGroupPopover.querySelector("button").focus({ preventScroll: true });
+      }
+
+      document.addEventListener("pointerdown", event => {
+        if (!openChartGroup || el.chartGroupPopover.contains(event.target) ||
+            chartGroupButtons.get(openChartGroup.key)?.contains(event.target)) return;
+        closeChartGroup();
+      }, true);
+
+      el.chartGroupPopover.addEventListener("keydown", event => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        closeChartGroup(true);
+      });
+
+      function overlappingChartGroups(plotted, labels, right, context) {
+        const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        const describe = members => {
+          if (members.length === 1) {
+            const index = members[0];
+            const { x, y } = plotted[index].point;
+            const boxes = [{ left: x - personDotRadius, right: x + personDotRadius,
+              top: y - personDotRadius, bottom: y + personDotRadius }];
+            if (labels[index]) boxes.push(labels[index].hit);
+            return { members, boxes };
+          }
+          const point = {
+            x: members.reduce((sum, index) => sum + plotted[index].point.x, 0) / members.length,
+            y: members.reduce((sum, index) => sum + plotted[index].point.y, 0) / members.length
+          };
+          const textWidth = context.measureText(`${members.length} people`).width;
+          const left = point.x > right - 90 ? point.x + personDotRadius - 16 - textWidth : point.x - personDotRadius;
+          return { members, point, left, boxes: [{ left, right: left + 16 + textWidth, top: point.y - 8, bottom: point.y + 8 }] };
+        };
+        const clusters = [];
+        for (let index = 0; index < plotted.length; index++) {
+          let current = describe([index]);
+          for (let i = 0; i < clusters.length;) {
+            if (current.boxes.some(a => clusters[i].boxes.some(b => overlaps(a, b)))) {
+              current = describe([...clusters[i].members, ...current.members]);
+              clusters.splice(i, 1);
+              i = 0;
+            } else {
+              i++;
+            }
+          }
+          clusters.push(current);
+        }
+        return clusters.filter(cluster => cluster.members.length > 1).map(cluster => {
+          const members = cluster.members.map(index => plotted[index]);
+          return { ...cluster, members, key: JSON.stringify(members.map(item => item.person.id).sort()),
+            sticky: members.every(item => item.sticky) };
+        });
+      }
+
+      function renderChartGroups(groups) {
+        chartGroups = groups;
+        groupedPersonIds = new Set(groups.flatMap(group => group.members.map(item => item.person.id)));
+        const keys = new Set(groups.map(group => group.key));
+        const chartRect = el.chart.getBoundingClientRect();
+        const obstacles = [...el.xAxes, ...el.yAxes].map(select => select.parentElement)
+          .filter(axis => getComputedStyle(axis).visibility !== "hidden")
+          .concat(el.chartInfo)
+          .map(element => {
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left - chartRect.left, right: rect.right - chartRect.left,
+              top: rect.top - chartRect.top, bottom: rect.bottom - chartRect.top };
+          });
+        if (openChartGroup && (openChartGroup.graphId !== activeGraphId || !keys.has(openChartGroup.key))) {
+          const menuHadFocus = el.chartGroupPopover.contains(document.activeElement);
+          closeChartGroup();
+          if (menuHadFocus) el.chart.focus({ preventScroll: true });
+        }
+        for (const [key, button] of chartGroupButtons) {
+          if (keys.has(key)) continue;
+          if (button === document.activeElement) el.chart.focus({ preventScroll: true });
+          button.remove();
+          chartGroupButtons.delete(key);
+        }
+        for (const group of groups) {
+          let button = chartGroupButtons.get(group.key);
+          if (!button) {
+            button = document.createElement("button");
+            button.type = "button";
+            button.className = "chart-group-button";
+            button.setAttribute("aria-controls", "chart-group-popover");
+            button.setAttribute("aria-expanded", "false");
+            const dot = document.createElement("span");
+            dot.className = "chart-group-dot";
+            dot.setAttribute("aria-hidden", "true");
+            const count = document.createElement("span");
+            count.className = "chart-group-count";
+            button.append(dot, count);
+            button.addEventListener("click", () => {
+              const current = chartGroups.find(item => item.key === group.key);
+              if (current) openChartGroupList(current, button);
+            });
+            chartGroupButtons.set(group.key, button);
+            el.chartGroups.append(button);
+          }
+          button.lastElementChild.textContent = `${group.members.length} people`;
+          button.setAttribute("aria-label", `Choose from ${group.members.length} overlapping people`);
+          const chosen = group.members.find(item =>
+            item.person.id === selectedPersonId || item.person.id === focusedNamePersonId);
+          const box = group.boxes[0];
+          const coversChosen = chosen && chosen.point.x + 12 > box.left && chosen.point.x - 12 < box.right &&
+            chosen.point.y + 12 > box.top && chosen.point.y - 12 < box.bottom;
+          let left = group.left;
+          let top = group.point.y - 8;
+          if (coversChosen) {
+            const textWidth = box.right - box.left - 16;
+            const right = chosen.point.x + 16;
+            const countLeft = right + textWidth <= el.chart.clientWidth ? right : chosen.point.x - 16 - textWidth;
+            left = Math.max(0, Math.min(countLeft, el.chart.clientWidth - textWidth)) - 16;
+            top = chosen.point.y - 8;
+          }
+          button.style.left = `${left}px`;
+          button.style.top = `${top}px`;
+          button.style.color = group.sticky ? "rgba(0, 0, 0, 0.23)" : "#000";
+          const labelOnLeft = !coversChosen && group.left < group.point.x - personDotRadius;
+          button.classList.toggle("group-label-left", labelOnLeft);
+          button.classList.toggle("group-selected", Boolean(coversChosen));
+          const textWidth = box.right - box.left - 16;
+          const countLeft = left + (labelOnLeft ? 0 : 16);
+          const overlapping = obstacles.filter(obstacle =>
+            countLeft < obstacle.right && countLeft + textWidth > obstacle.left);
+          const offsets = [0, ...overlapping.flatMap(obstacle => [
+            obstacle.top - top - 18, obstacle.bottom - top + 2
+          ])].sort((a, b) => Math.abs(a) - Math.abs(b));
+          const offset = offsets.find(value => top + value >= 0 && top + value + 16 <= chartRect.height &&
+            overlapping.every(obstacle => top + value + 16 <= obstacle.top || top + value >= obstacle.bottom));
+          button.lastElementChild.style.top = `${offset ?? 0}px`;
+          if (openChartGroup?.key === group.key) {
+            const menu = el.chartGroupPopover;
+            menu.style.left = `${Math.max(0, Math.min(group.point.x + 8, el.chart.clientWidth - menu.offsetWidth))}px`;
+            menu.style.top = `${Math.max(0, Math.min(group.point.y + 8, el.chart.clientHeight - menu.offsetHeight))}px`;
+            [...menu.querySelectorAll("button")].forEach((item, index) => {
+              const member = group.members[index];
+              item.dataset.personId = member.person.id;
+              item.textContent = chartGroupMemberLabel(group, member);
+            });
+          }
+        }
+      }
+
       function drawChart() {
         const canvas = el.chart;
         el.resetZoom.hidden = chartView.zoom === 1;
@@ -2494,6 +2708,7 @@
           if (placementRingFrame !== null) cancelAnimationFrame(placementRingFrame);
           placementRingFrame = null;
           chartLabelHits = [];
+          renderChartGroups([]);
           for (const hit of el.chartLabelHitAreas) hit.hidden = true;
           el.chartLabels.getContext("2d").clearRect(0, 0, el.chartLabels.width, el.chartLabels.height);
           return;
@@ -2615,7 +2830,9 @@
             }
           };
         });
+        renderChartGroups(overlappingChartGroups(plotted, labels, right, context));
         chartLabelHits = labels.flatMap(label => {
+          if (groupedPersonIds.has(label.hit.personId)) return label.nameHit ? [label.nameHit] : [];
           if (!label.nameHit) return [label.hit];
           return label.nameBox.personId === hoveredPersonId
             ? [{ ...label.hit, isHoverAnchor: true }, label.nameHit] : [label.nameHit];
@@ -2648,7 +2865,7 @@
           context.stroke();
         };
         plotted.forEach((_, index) => {
-          if (index !== focusedIndex && index !== selectedIndex) drawDot(index);
+          if (index !== focusedIndex && index !== selectedIndex && !groupedPersonIds.has(plotted[index].person.id)) drawDot(index);
         });
         context.globalAlpha = 1;
         const drawLabel = (index, hovered = false, target = context) => {
@@ -2686,9 +2903,11 @@
         };
         if (!state.hideNames) {
           plotted.forEach((_, index) => {
-            if (index !== hoveredIndex && index !== foregroundIndex && index !== selectedIndex && index !== focusedIndex) drawLabel(index);
+            if (index !== hoveredIndex && index !== foregroundIndex && index !== selectedIndex && index !== focusedIndex &&
+                !groupedPersonIds.has(plotted[index].person.id)) drawLabel(index);
           });
-          if (foregroundIndex !== -1 && foregroundIndex !== hoveredIndex && foregroundIndex !== selectedIndex && foregroundIndex !== focusedIndex) drawLabel(foregroundIndex);
+          if (foregroundIndex !== -1 && foregroundIndex !== hoveredIndex && foregroundIndex !== selectedIndex &&
+              foregroundIndex !== focusedIndex && !groupedPersonIds.has(plotted[foregroundIndex].person.id)) drawLabel(foregroundIndex);
         }
         if (focusedIndex !== -1 && focusedIndex !== selectedIndex) drawDot(focusedIndex);
         const drawHighlight = index => {
@@ -2716,7 +2935,8 @@
           context.arc(x, y, 9 + 17 * progress, 0, Math.PI * 2);
           context.stroke();
         }
-        const awaitingPlacement = plotted.filter(({ person }) => person.awaitingPlacement);
+        const awaitingPlacement = plotted.filter(({ person }) => person.awaitingPlacement &&
+          (!groupedPersonIds.has(person.id) || person.id === selectedPersonId || person.id === focusedNamePersonId));
         const placementProgress = reducedMotion.matches ? 0.3 :
           Math.min(1, (performance.now() % PLACEMENT_RING_INTERVAL) / RING_EXPANSION_DURATION);
         for (const { point } of awaitingPlacement) {
