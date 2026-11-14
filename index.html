@@ -582,8 +582,8 @@
             <p id="tutorial-description"></p>
             <p id="tutorial-step"></p>
           </div>
-          <div class="tutorial-progress" role="progressbar" aria-label="Tutorial progress" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1">
-            <span></span><span></span><span></span><span></span><span></span>
+          <div class="tutorial-progress" role="progressbar" aria-label="Tutorial progress" aria-valuemin="1" aria-valuemax="6" aria-valuenow="1">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
           <div id="tutorial-error" class="tutorial-error" role="alert" hidden></div>
           <div class="tutorial-actions">
@@ -794,6 +794,7 @@
       let tutorialSaving = false;
       let tutorialSaveFailed = false;
       let tutorialSession = 0;
+      let tutorialStepCleanup = null;
       let mePerson = null;
       const activeGraphLoads = new Set();
       let graphs = [];
@@ -1238,8 +1239,26 @@
         },
         {
           title: "Adjust their traits",
-          description: "Expand a person's row to see their trait sliders. Move a slider to change that person's score.",
-          target: () => el.peopleScroll
+          description: "Expand a person's row to see their trait sliders, like Me's shown here. Move a slider to change that person's score.",
+          target: () => el.peopleScroll,
+          enter: () => {
+            const card = el.meRow.querySelector(".person-card");
+            const wasOpen = card.open;
+            const scrollTop = el.peopleScroll.scrollTop;
+            card.open = true;
+            card.querySelector(".person-caret").setAttribute("aria-expanded", "true");
+            el.peopleScroll.scrollTop = 0;
+            updatePeopleExpandButton();
+            return () => {
+              const currentCard = el.meRow.querySelector(".person-card");
+              if (currentCard) {
+                currentCard.open = wasOpen;
+                currentCard.querySelector(".person-caret").setAttribute("aria-expanded", String(wasOpen));
+                updatePeopleExpandButton();
+              }
+              el.peopleScroll.scrollTop = scrollTop;
+            };
+          }
         },
         {
           title: "Investigate the graph",
@@ -1252,6 +1271,15 @@
           target: () => {
             const axis = el.xAxes[1].parentElement;
             return getComputedStyle(axis).visibility === "hidden" ? el.chart : axis;
+          }
+        },
+        {
+          title: "Explore graph options",
+          description: "Use Options to show or hide names and relationships, or color people by relationship.",
+          target: () => el.graphOptionsMenu,
+          enter: () => {
+            openGraphOptions();
+            return () => closeGraphOptions();
           }
         },
         {
@@ -1307,7 +1335,9 @@
       }
 
       function renderTutorial() {
+        clearTutorialStep();
         const step = tutorialSteps[tutorialIndex];
+        tutorialStepCleanup = step.enter ? step.enter() : null;
         el.tutorialHeading.textContent = step.title;
         el.tutorialDescription.textContent = step.description;
         el.tutorialStep.textContent = `Step ${tutorialIndex + 1} of ${tutorialSteps.length}`;
@@ -1319,6 +1349,13 @@
         el.tutorialBack.disabled = tutorialIndex === 0;
         el.tutorialNext.textContent = tutorialIndex === tutorialSteps.length - 1 ? "Finish" : "Next";
         positionTutorial();
+      }
+
+      function clearTutorialStep() {
+        if (!tutorialStepCleanup) return;
+        const cleanup = tutorialStepCleanup;
+        tutorialStepCleanup = null;
+        cleanup();
       }
 
       function startTutorial(error = "") {
@@ -1345,6 +1382,7 @@
         try {
           if (currentUser.user_metadata?.thepear_tutorial !== "done") await saveTutorialStatus("done");
           if (tutorialSession === session && currentUser?.id === userId && el.tutorialDialog.open) {
+            clearTutorialStep();
             el.tutorialDialog.close();
           }
         } catch (error) {
@@ -1367,7 +1405,10 @@
       }
 
       function skipTutorial() {
-        if (tutorialSaveFailed && !tutorialSaving) el.tutorialDialog.close();
+        if (tutorialSaveFailed && !tutorialSaving) {
+          clearTutorialStep();
+          el.tutorialDialog.close();
+        }
         else void finishTutorial();
       }
 
@@ -1475,6 +1516,7 @@
         if (el.deletePersonDialog.open) el.deletePersonDialog.close();
         if (currentUser?.id !== nextUser?.id) {
           if (el.tutorialDialog.open) {
+            clearTutorialStep();
             el.tutorialDialog.close();
             tutorialSession += 1;
             tutorialSaving = false;
@@ -3808,13 +3850,17 @@
         if (restoreFocus) el.graphOptionsToggle.focus();
       }
 
+      function openGraphOptions() {
+        el.graphOptionsMenu.hidden = false;
+        el.graphOptionsToggle.setAttribute("aria-expanded", "true");
+      }
+
       el.graphOptionsToggle.addEventListener("click", () => {
         if (!el.graphOptionsMenu.hidden) {
           closeGraphOptions();
           return;
         }
-        el.graphOptionsMenu.hidden = false;
-        el.graphOptionsToggle.setAttribute("aria-expanded", "true");
+        openGraphOptions();
       });
       el.graphOptionsToggle.parentElement.addEventListener("keydown", event => {
         if (event.key === "Escape") {
@@ -3826,7 +3872,7 @@
         if (!el.graphOptionsToggle.parentElement.contains(event.relatedTarget)) closeGraphOptions();
       });
       document.addEventListener("pointerdown", event => {
-        if (!el.graphOptionsToggle.parentElement.contains(event.target)) closeGraphOptions();
+        if (!el.tutorialDialog.open && !el.graphOptionsToggle.parentElement.contains(event.target)) closeGraphOptions();
       });
       el.relationshipColors.addEventListener("change", () => {
         state.colorByRelationship = el.relationshipColors.checked;
