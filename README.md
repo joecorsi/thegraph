@@ -4,6 +4,8 @@ A no-build HTML/CSS/JavaScript app for rating people on adjustable traits and co
 
 The hosted app is available at [joecorsi.github.io/thepear/](https://joecorsi.github.io/thepear/).
 
+The sign-in page includes a sample graph. Drag a sample person, scroll to zoom, or drag empty space to pan; use the arrow keys to move a focused person and Shift-arrow keys to pan when zoomed. Sample changes are not saved or added to an account.
+
 A retro loading indicator fills in steps as your profile and graphs load, then disappears when loading finishes or fails.
 
 New accounts see a six-step getting-started tour after their first graph loads. Use **Back**, **Next**, **Skip**, or Escape to navigate or close it. **Start over** returns to the first step, and **Restart tutorial** in the email menu reopens it after closing. Completing or skipping the tour is saved with the account, so it stays dismissed across devices. The tour explains the controls without changing graph data. The email menu also contains **Sign out** and a disabled **Account** placeholder.

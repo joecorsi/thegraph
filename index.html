@@ -57,14 +57,32 @@
       .masthead .account-bar { justify-self: end; }
       .privacy-note { display: none; margin: 0; text-align: center; font-size: .85em; }
       .page:has(#workspace:not([hidden])) .privacy-note { display: block; }
+      .auth-panel:not([hidden]) { display: grid; grid-template-columns: minmax(0, 25rem) minmax(0, 360px); align-items: start; gap: 2rem; }
       .auth-form { display: grid; gap: .5em; max-width: 30em; margin: 1em 0; }
-      #sign-in-form { width: fit-content; max-width: 100%; }
+      #sign-in-form { width: 100%; max-width: 100%; }
       #auth-email { min-width: 0; }
       .auth-actions, .add-row, .dimension-row, .people-heading, .chart-heading {
         display: flex; flex-wrap: wrap; align-items: center; gap: .5em;
       }
-      #sign-in-form .auth-actions button { flex: 1 1 auto; }
+      #sign-in-form .auth-actions { display: grid; }
       .setup-details { margin: 1em 0; }
+      .demo-graph { --demo-axis-x: 50%; --demo-axis-y: 50%; position: relative; box-sizing: border-box; width: min(360px, 100%); aspect-ratio: 1; overflow: hidden; border: 1px solid rgba(0, 0, 0, .15); border-radius: 8px; background: #fff; color: #000; touch-action: none; }
+      .demo-graph:focus-within { border-color: #000; }
+      .demo-axis-line { position: absolute; pointer-events: none; }
+      .demo-axis-horizontal { left: 20px; right: 20px; top: var(--demo-axis-y); border-top: 1px solid #000; }
+      .demo-axis-vertical { top: 20px; bottom: 20px; left: var(--demo-axis-x); border-left: 1px solid #000; }
+      .demo-axis-label { position: absolute; z-index: 1; font: 13.3333px Arial, sans-serif; pointer-events: none; }
+      .demo-x-low, .demo-x-high { top: calc(var(--demo-axis-y) - 19px); }
+      .demo-x-low { left: 20px; }
+      .demo-x-high { right: 20px; }
+      .demo-y-low, .demo-y-high { left: min(calc(var(--demo-axis-x) + 6px), calc(100% - 90px)); }
+      .demo-y-low { bottom: 20px; }
+      .demo-y-high { top: 20px; }
+      .demo-person { position: absolute; z-index: 2; display: flex; align-items: center; gap: 3px; padding: 0; border: 0; background: transparent; color: #000; font: bold 12px serif; white-space: nowrap; transform: translate(-6px, -50%); cursor: move; touch-action: none; }
+      .demo-person.label-left { flex-direction: row-reverse; transform: translate(calc(-100% + 6px), -50%); }
+      .demo-person:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+      .demo-person-dot { box-sizing: border-box; flex: none; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: var(--person-color); }
+      .demo-help { margin: .5em 0; }
       .layout { --layout-gap: calc(1em + 5px); display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, min(calc(100% - min(40%, 21rem) - var(--layout-gap)), var(--chart-available-width, 100%))) min(40%, 21rem); grid-template-rows: minmax(0, 1fr); justify-content: center; gap: var(--layout-gap); }
       .graph-select { position: relative; flex: 1 1 90px; min-width: 90px; }
       .graph-dates { display: flex; flex-wrap: wrap; gap: var(--control-gap); }
@@ -296,6 +314,9 @@
       @media (max-width: 760px) {
         .layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
       }
+      @media (max-width: 680px) {
+        .auth-panel:not([hidden]) { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+      }
       @media (max-width: 650px) {
         .page:has(#workspace:not([hidden])) .masthead { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
         .masthead .privacy-note { grid-column: 1 / -1; grid-row: 2; }
@@ -339,27 +360,41 @@
 
       <div class="content">
         <section class="panel auth-panel" id="auth-screen" aria-labelledby="auth-title">
-          <h1 id="auth-title">Welcome to The Pear!</h1>
-          <p class="muted">Sign in to keep your graphs private and available on your other devices.</p>
-          <form class="auth-form" id="sign-in-form">
-            <label class="field-label" for="auth-email">Your email address</label>
-            <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required>
-            <div class="auth-actions">
-              <button class="button button-pink" id="email-sign-in" type="submit">Email me a sign-in link</button>
-              <button class="button" id="google-sign-in" type="button">Sign in with Google</button>
-            </div>
-          </form>
-          <details class="setup-details" id="connection-details" hidden>
-            <summary id="connection-summary">Set up Supabase connection</summary>
-            <form class="auth-form" id="connection-form">
-              <label class="field-label" for="project-url">Supabase project URL</label>
-              <input id="project-url" type="url" placeholder="https://your-project.supabase.co" required>
-              <label class="field-label" for="public-key">Supabase publishable key</label>
-              <input id="public-key" type="password" autocomplete="off" placeholder="sb_publishable_..." required>
-              <button class="button" type="submit">Save connection</button>
+          <div class="auth-copy">
+            <h1 id="auth-title">Welcome to The Pear!</h1>
+            <p class="muted">Sign in to keep your graphs private<br>and available on your other devices.</p>
+            <form class="auth-form" id="sign-in-form">
+              <label class="field-label" for="auth-email">Your email address</label>
+              <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+              <div class="auth-actions">
+                <button class="button button-pink" id="email-sign-in" type="submit">Email me a sign-in link</button>
+                <button class="button" id="google-sign-in" type="button">Sign in with Google</button>
+              </div>
             </form>
-          </details>
-          <div class="notice" id="auth-notice" role="status" aria-live="polite"></div>
+            <details class="setup-details" id="connection-details" hidden>
+              <summary id="connection-summary">Set up Supabase connection</summary>
+              <form class="auth-form" id="connection-form">
+                <label class="field-label" for="project-url">Supabase project URL</label>
+                <input id="project-url" type="url" placeholder="https://your-project.supabase.co" required>
+                <label class="field-label" for="public-key">Supabase publishable key</label>
+                <input id="public-key" type="password" autocomplete="off" placeholder="sb_publishable_..." required>
+                <button class="button" type="submit">Save connection</button>
+              </form>
+            </details>
+            <div class="notice" id="auth-notice" role="status" aria-live="polite"></div>
+          </div>
+          <div class="demo">
+            <div class="demo-graph" id="demo-graph" role="group" aria-label="Interactive sample graph" aria-describedby="demo-help">
+              <span class="demo-axis-line demo-axis-horizontal"></span>
+              <span class="demo-axis-line demo-axis-vertical"></span>
+              <span class="demo-axis-label demo-x-low">Lame</span>
+              <span class="demo-axis-label demo-x-high">Cool</span>
+              <span class="demo-axis-label demo-y-low">Benevolent</span>
+              <span class="demo-axis-label demo-y-high">Malevolent</span>
+            </div>
+            <p class="demo-help" id="demo-help">Drag a person, scroll to zoom, or drag empty space to pan.</p>
+            <button type="button" id="demo-reset" hidden>Reset view</button>
+          </div>
         </section>
 
         <section id="workspace" hidden>
@@ -2600,6 +2635,145 @@
         view.y = Math.max(half, Math.min(1 - half, view.y));
       }
 
+      function setupDemoGraph() {
+        const frame = document.getElementById("demo-graph");
+        const reset = document.getElementById("demo-reset");
+        const people = [
+          { name: "Alex", color: "#145c92", x: 18, y: 76 },
+          { name: "Blair", color: "#c52d83", x: 42, y: 85 },
+          { name: "Casey", color: "#468949", x: 73, y: 78 },
+          { name: "Drew", color: "#dc7720", x: 85, y: 55 },
+          { name: "Emery", color: "#009a9a", x: 57, y: 62 },
+          { name: "Frankie", color: "#744aa0", x: 25, y: 53 },
+          { name: "Harper", color: "#b45361", x: 12, y: 29 },
+          { name: "Jules", color: "#528347", x: 38, y: 20 },
+          { name: "Morgan", color: "#567ab3", x: 64, y: 31 },
+          { name: "Riley", color: "#987629", x: 86, y: 14 }
+        ];
+        let view = { zoom: 1, x: 0.5, y: 0.5 };
+        let drag = null;
+        const buttons = people.map(person => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "demo-person";
+          button.style.setProperty("--person-color", person.color);
+          button.setAttribute("aria-label", `${person.name}, sample person. Use arrow keys to adjust.`);
+          const dot = document.createElement("span");
+          dot.className = "demo-person-dot";
+          dot.setAttribute("aria-hidden", "true");
+          const name = document.createElement("span");
+          name.textContent = person.name;
+          button.append(dot, name);
+          frame.append(button);
+          return button;
+        });
+        const bounds = () => {
+          const width = frame.clientWidth;
+          const height = frame.clientHeight;
+          const inset = Math.min(38, (Math.min(width, height) - 1) / 2);
+          const viewport = { left: inset, top: inset, right: width - inset, bottom: height - inset };
+          return { width, height, viewport, viewed: viewedChartBounds(width, height, view, viewport) };
+        };
+        const pointFor = (person, viewed) => ({
+          x: viewed.left + person.x / 100 * (viewed.right - viewed.left),
+          y: viewed.bottom - person.y / 100 * (viewed.bottom - viewed.top)
+        });
+        const eventPoint = event => {
+          const rect = frame.getBoundingClientRect();
+          return { x: event.clientX - rect.left - frame.clientLeft, y: event.clientY - rect.top - frame.clientTop };
+        };
+        const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
+        function draw() {
+          const { width, height, viewport, viewed } = bounds();
+          if (!width || !height) return;
+          frame.style.setProperty("--demo-axis-x", `${Math.max(20, Math.min(width - 20, (viewed.left + viewed.right) / 2))}px`);
+          frame.style.setProperty("--demo-axis-y", `${Math.max(20, Math.min(height - 20, (viewed.top + viewed.bottom) / 2))}px`);
+          people.forEach((person, index) => {
+            const point = displayedChartPoint(pointFor(person, viewed), viewport);
+            buttons[index].style.left = `${point.x}px`;
+            buttons[index].style.top = `${point.y}px`;
+            buttons[index].classList.toggle("label-left", point.x > width - 90);
+          });
+          reset.hidden = view.zoom === 1;
+        }
+        frame.addEventListener("wheel", event => {
+          if (drag) return;
+          event.preventDefault();
+          const { viewport, height } = bounds();
+          const point = eventPoint(event);
+          const x = Math.max(0, Math.min(1, (point.x - viewport.left) / (viewport.right - viewport.left))) - 0.5;
+          const y = Math.max(0, Math.min(1, (point.y - viewport.top) / (viewport.bottom - viewport.top))) - 0.5;
+          const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? height : 1);
+          const zoom = Math.max(1, Math.min(8, view.zoom * Math.exp(-delta * 0.0015)));
+          view = { zoom, x: view.x + x / view.zoom - x / zoom, y: view.y + y / view.zoom - y / zoom };
+          constrainChartView(view);
+          draw();
+        }, { passive: false });
+        frame.addEventListener("pointerdown", event => {
+          if (!event.isPrimary || event.button !== 0 || drag) return;
+          const index = buttons.indexOf(event.target.closest(".demo-person"));
+          const point = eventPoint(event);
+          if (index >= 0) {
+            const { viewed, viewport } = bounds();
+            const position = displayedChartPoint(pointFor(people[index], viewed), viewport);
+            drag = { pointerId: event.pointerId, index, offsetX: point.x - position.x, offsetY: point.y - position.y };
+            buttons[index].focus({ preventScroll: true });
+          } else if (view.zoom > 1) {
+            drag = { pointerId: event.pointerId, x: point.x, y: point.y };
+          } else return;
+          frame.setPointerCapture(event.pointerId);
+          event.preventDefault();
+        });
+        frame.addEventListener("pointermove", event => {
+          if (!drag || event.pointerId !== drag.pointerId) return;
+          const point = eventPoint(event);
+          const { viewport, viewed } = bounds();
+          if (drag.index === undefined) {
+            view.x -= (point.x - drag.x) / ((viewport.right - viewport.left) * view.zoom);
+            view.y -= (point.y - drag.y) / ((viewport.bottom - viewport.top) * view.zoom);
+            constrainChartView(view);
+            drag.x = point.x;
+            drag.y = point.y;
+          } else {
+            const person = people[drag.index];
+            person.x = clamp((point.x - drag.offsetX - viewed.left) / (viewed.right - viewed.left) * 100);
+            person.y = clamp((viewed.bottom - point.y + drag.offsetY) / (viewed.bottom - viewed.top) * 100);
+          }
+          draw();
+        });
+        const endDrag = event => {
+          if (drag?.pointerId === event.pointerId) drag = null;
+        };
+        frame.addEventListener("pointerup", endDrag);
+        frame.addEventListener("pointercancel", endDrag);
+        frame.addEventListener("lostpointercapture", endDrag);
+        frame.addEventListener("keydown", event => {
+          const direction = {
+            ArrowLeft: ["x", -1], ArrowRight: ["x", 1],
+            ArrowDown: ["y", -1], ArrowUp: ["y", 1]
+          }[event.key];
+          if (!direction || drag) return;
+          if (event.shiftKey && view.zoom > 1) {
+            const amount = 0.1 / view.zoom * direction[1];
+            if (direction[0] === "x") view.x += amount;
+            else view.y -= amount;
+            constrainChartView(view);
+          } else {
+            const index = buttons.indexOf(event.target);
+            if (index < 0) return;
+            const person = people[index];
+            person[direction[0]] = clamp(person[direction[0]] + direction[1]);
+          }
+          event.preventDefault();
+          draw();
+        });
+        reset.addEventListener("click", () => {
+          view = { zoom: 1, x: 0.5, y: 0.5 };
+          draw();
+        });
+        new ResizeObserver(draw).observe(frame);
+      }
+
       function displayedChartPoint(point, bounds) {
         if (!point) return null;
         return {
@@ -2607,6 +2781,8 @@
           y: Math.max(bounds.top, Math.min(bounds.bottom, point.y))
         };
       }
+
+      setupDemoGraph();
 
       function panChart(dx, dy) {
         if (!state) return;
