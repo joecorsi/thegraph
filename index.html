@@ -598,7 +598,7 @@
 
     <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" hidden>
       <div class="loading-window">
-        <div class="loading-title">The Pear</div>
+        <div class="loading-title"><span aria-hidden="true">🍐</span> The Pear</div>
         <div class="loading-body">
           <p>Loading your graphs...</p>
           <div class="loading-progress" role="progressbar" aria-label="Loading your graphs" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -1234,7 +1234,7 @@
       const tutorialSteps = [
         {
           title: "Add a person",
-          description: "Enter a name and optional details, then select Add.",
+          description: "Enter a name, optional details, age and select Add.",
           target: () => el.addPersonForm
         },
         {
