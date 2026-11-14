@@ -57,11 +57,12 @@
       .masthead .account-bar { justify-self: end; }
       .privacy-note { display: none; margin: 0; text-align: center; font-size: .85em; }
       .page:has(#workspace:not([hidden])) .privacy-note { display: block; }
-      .auth-panel:not([hidden]) { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 360px); grid-template-areas: "heading ." "details demo"; align-items: start; column-gap: 2rem; }
-      .auth-copy { display: contents; }
-      #auth-title { grid-area: heading; margin-bottom: 0; }
-      .auth-details { grid-area: details; min-width: 0; }
-      .demo { grid-area: demo; }
+      .auth-panel:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); grid-template-rows: auto auto; align-items: start; column-gap: 2rem; }
+      .auth-copy { display: grid; grid-column: 1; grid-row: 1 / span 2; grid-template-rows: subgrid; width: fit-content; max-width: 100%; align-self: stretch; }
+      #auth-title { margin-bottom: 0; }
+      .auth-details { min-width: 0; }
+      .auth-details .muted { text-align: justify; text-align-last: justify; }
+      .demo { grid-column: 2; grid-row: 2; }
       .auth-form { display: grid; gap: .5em; max-width: 30em; margin: 1em 0; }
       #sign-in-form { width: 100%; max-width: 100%; }
       #auth-email { min-width: 0; }
@@ -318,8 +319,8 @@
         .layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
       }
       @media (max-width: 680px) {
-        .auth-panel:not([hidden]) { grid-template-columns: minmax(0, max-content); grid-template-areas: "heading" "details" "demo"; }
-        .demo { margin-top: 1rem; }
+        .auth-panel:not([hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; }
+        .demo { grid-column: 1; grid-row: 3; margin-top: 1rem; }
       }
       @media (max-width: 650px) {
         .page:has(#workspace:not([hidden])) .masthead { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
