@@ -219,8 +219,6 @@
       .chart-heading h2, .people-heading h2 { margin: 0; font-size: 1.25em; font-weight: normal; }
       .chart-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; width: max(100%, min(100cqw, 22rem)); margin-top: .5em; }
       .graph-footer-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--control-gap); }
-      .merge-distance-control { display: flex; align-items: center; gap: 4px; white-space: nowrap; font: 13.3333px Arial, sans-serif; }
-      .merge-distance-control input { width: 240px; max-width: 35cqw; margin: 0; }
       .graph-options { position: relative; }
       .graph-options-toggle { position: relative; padding-right: 24px; padding-left: 2px; text-align: left; }
       .graph-options-toggle::after { content: ""; position: absolute; right: 6px; top: 50%; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid currentColor; transform: translateY(-50%); pointer-events: none; }
@@ -388,10 +386,6 @@
                       </span>
                       <button id="shuffle-axes" type="button" title="Randomly choose two different traits">Shuffle axes</button>
                       <button id="reset-zoom" type="button" hidden>Reset view</button>
-                      <label class="merge-distance-control" for="merge-distance">Merge distance
-                        <input id="merge-distance" type="range" min="-20" max="500" step="1" value="-20">
-                        <output id="merge-distance-value" for="merge-distance">-20 px</output>
-                      </label>
                     </span>
                   </div>
                 </div>
@@ -699,8 +693,6 @@
         chartGroupPopover: document.getElementById("chart-group-popover"),
         chartInfo: document.querySelector(".chart-info"),
         resetZoom: document.getElementById("reset-zoom"),
-        mergeDistance: document.getElementById("merge-distance"),
-        mergeDistanceValue: document.getElementById("merge-distance-value"),
         chartLabels: document.getElementById("chart-labels"),
         chartLabelHitAreas: document.querySelectorAll(".chart-label-hit"),
         graphFooterControls: document.querySelector(".graph-footer-controls"),
@@ -2579,18 +2571,10 @@
       });
 
       function overlappingChartGroups(plotted, labels, right, context) {
-        const distance = el.mergeDistance.valueAsNumber;
         const overlaps = (a, b) => {
-          if (distance < 0) {
-            const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-            const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-            return width >= -distance && height >= -distance;
-          }
-          if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) return true;
-          if (distance === 0) return false;
-          const dx = Math.max(a.left - b.right, b.left - a.right, 0);
-          const dy = Math.max(a.top - b.bottom, b.top - a.bottom, 0);
-          return Math.hypot(dx, dy) <= distance;
+          const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+          const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          return width >= 10 && height >= 10;
         };
         const describe = members => {
           if (members.length === 1) {
@@ -3444,10 +3428,6 @@
       });
       el.graphOptionsToggle.parentElement.addEventListener("focusout", event => {
         if (!el.graphOptionsToggle.parentElement.contains(event.relatedTarget)) closeGraphOptions();
-      });
-      el.mergeDistance.addEventListener("input", () => {
-        el.mergeDistanceValue.value = `${el.mergeDistance.value} px`;
-        drawChart();
       });
       document.addEventListener("pointerdown", event => {
         if (!el.graphOptionsToggle.parentElement.contains(event.target)) closeGraphOptions();
