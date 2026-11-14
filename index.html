@@ -98,7 +98,7 @@
       .chart-label-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
       #chart-labels { display: block; width: 100%; height: 100%; }
       .chart-label-hit { position: absolute; pointer-events: auto; touch-action: none; }
-      .chart-info { position: absolute; top: var(--control-gap); left: var(--control-gap); z-index: 4; }
+      .chart-info { position: absolute; top: calc(var(--control-gap) / 2); left: calc(var(--control-gap) / 2); z-index: 4; }
       .chart-info-button { display: grid; place-items: center; padding: 2px; border: 0; background: transparent; color: #000; opacity: .35; cursor: help; }
       .chart-info:hover .chart-info-button, .chart-info:focus-within .chart-info-button { opacity: 1; }
       .chart-info-button svg { display: block; width: 18px; height: 18px; }
@@ -2074,10 +2074,10 @@
       }
 
       function peopleBounds(width, height) {
-        const chart = el.chart.getBoundingClientRect();
         const info = el.chartInfo.getBoundingClientRect();
         const gap = parseFloat(getComputedStyle(el.graphFooterControls).columnGap);
-        const inset = Math.min(Math.max(info.right - chart.left, info.bottom - chart.top) + personDotRadius + gap,
+        // Keep the plotting area stable when the info icon moves.
+        const inset = Math.min(Math.max(info.width, info.height) + personDotRadius + 2 * gap,
           (Math.min(width, height) - 1) / 2);
         return { left: inset, top: inset, right: width - inset, bottom: height - inset };
       }
